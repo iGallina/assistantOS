@@ -1,0 +1,8 @@
+# per-user config and secrets never go in git; templates are *.example.json
+config/*.json
+!config/*.example.json
+.env
+*.log
+__pycache__/
+target/
+.DS_Store
