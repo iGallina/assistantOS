@@ -32,3 +32,30 @@ Jev ties Haiku on quality, is ~40× faster and returns tunable probabilities →
 - **A tool's silence is not evidence.** Prove a search on a known match before trusting a zero (a `\b` regex returned 0 phone numbers when there were 991).
 - **Reopen must be real** (2026-09-26). A done item with a new message must come back visibly, and marking it done again must not toggle it open.
 - **Follow-ups need an owner and a date** (2026-09-26). "Waiting on X until D" → answered first = the owner's turn; date reached = overdue with the chase drafted.
+
+## 2026-09-28 — Operating assumptions (Ian)
+
+1. **Upstream-first.** Every installation reports bugs and improvements to the CORE back to the main repo.
+2. **One repo per installation**, because each needs its own optimisations. *Adjustment pending (see below): a GitHub fork of a public repo is always public, so the per-install repo is a private repo created from the template with `upstream` = the main repo, not a GitHub fork.*
+3. **Secrets live in Bitwarden** — passwords, tokens, API keys. A skill installs and maintains Bitwarden. *Pending: `bw` (human vault, needs an unlock) vs `bws` (Secrets Manager, machine access tokens — works unattended).*
+4. **Rust as much as possible**; Rust and Python are both installed. A skill knows how to install and update both on every OS.
+5. **Superpowers** drives every piece of code (brainstorm → plan → deterministic implementation), under the **Karpathy principles** (github.com/multica-ai/andrej-karpathy-skills) as the coding motto.
+6. **Fizzy is the main kanban** and the user's visual feedback.
+7. **A daily run** generates/updates an **HTML report** (persisted) that proposes the best prompts for the next step/action.
+8. **No SOUL.md / HEARTBEAT.md.** Onboarding teaches each skill and when to use it instead.
+9. **Onboarding builds the first script with the user**: pick a source of repetitive work (e-mail, Slack, WhatsApp, …) → a monitor built with the skills → an HTML report → tune it for missing information → next-action buttons → schedule the sweep so the agent runs it periodically.
+
+## Open items raised 2026-09-28 (to decide)
+
+- Per-install repo: template + `upstream` remote (private) instead of a GitHub fork — forks of public repos cannot be private.
+- Upstream reporting: redaction before anything leaves an install (logs hold client messages); the owner approves each report; Jev can pre-classify "core bug vs local tweak".
+- Updates: versioned core + changelog + migration scripts + CI tests, so `git pull upstream` doesn't break a customised install.
+- Bitwarden: `bws` machine token for scheduled runs vs `bw` unlock.
+- Rust on owners' PCs: ship prebuilt signed binaries; compiling Rust on Windows needs the MSVC Build Tools (several GB) — keep the toolchain on the dev side unless an install truly needs it.
+- Windows trust: unsigned `.exe` triggers SmartScreen/antivirus — code-signing certificate.
+- Privacy/LGPD: client messages flow to the chosen LLM and Jev; consent, retention and export/delete per install.
+- Cost guard: per-install LLM/Jev budget cap and the call log shown in the daily report.
+- Support access for the services revenue: opt-in remote access (e.g. Tailscale) and an opt-in health ping.
+- Backups of local state (SQLite, config) and a clean uninstall/export.
+- Language: pt-BR first for Brazilian owners.
+- WhatsApp: unofficial client (`wacli`) risk on customers' numbers vs the official Business API.
