@@ -96,3 +96,18 @@ Jev ties Haiku on quality, is ~40× faster and returns tunable probabilities →
 - **Plugin shape (in the core package):** one module per plugin = Pydantic config + `connect` (guided setup) + `doctor` (a read that proves access) + the actions the graph may call.
 - **Google route (proposed, spike pending):** an **Apps Script bridge** in the user's own account — pushed with `clasp`, deployed as a private web app ("execute as me"), called by the local agent with a shared secret kept in Bitwarden. Built-in Gmail/Docs/Sheets/Drive/Calendar access, no Cloud project, one settings toggle + one consent. Scored 86 vs own-Cloud-project wizard 72, shared verified app 65 (restricted Gmail scopes → paid yearly assessment), IMAP app password 76 (mail only).
 - **Spike must prove:** consent flow incl. the unverified-app screen; no 7-day expiry; read + draft in Gmail, read/write a Sheet and a Doc; consumer quotas; that the web-app URL is useless without the secret.
+
+## 2026-09-29 — LangGraph yes, LangChain model wrappers no (proposed, pending Ian)
+
+Question (Ian): do we need LangChain and LangGraph, given agents must carry the heavy load, grow on top of current features and work across every technology?
+
+| Option | Viability /30 | Scalability /30 | Zero cost /20 | Maintenance /20 | Total |
+|---|---|---|---|---|---|
+| **A. LangGraph for jobs + our own thin backends** | 27 | 27 | 20 | 15 | **89** |
+| B. LangChain chat-model wrappers + LangGraph (spec as written) | 25 | 27 | 20 | 11 | 83 |
+| C. Neither: plain loop (AIS-OS style) | 28 | 18 | 20 | 16 | 82 |
+| D. PydanticAI / pydantic-graph | 20 | 24 | 18 | 14 | 76 |
+
+- **LangGraph earns its place** (evidence: `docs/spikes/2026-09-29-langgraph-durable-approval.py`): fan-out of one worker per item (`Send`), a pause for the owner's approval (`interrupt`) that survives the process exiting, and resume from the local SQLite checkpoint in a new process (`Command(resume=...)`). That is "nothing sends without the owner" as a durable, resumable workflow — and heavy jobs become graphs of small resumable steps. Runs locally, no server.
+- **LangChain's model layer does not:** the providers here are CLIs we wrap ourselves, so its integrations don't apply; the wrapper class broke twice on attribute shadowing in the spikes. Our own `Backend.ask(prompt, output_model) -> model` (one small class per CLI) is simpler and testable. `langchain-core` still arrives as LangGraph's dependency; an API-key backend can later wrap a LangChain model behind the same interface.
+- **Any technology:** a graph node calls a backend (Claude, Codex, Gemini, a future API) or a plugin through our own interfaces, so new tech is a new backend/plugin, not a graph change. Heavy tool work stays in the CLIs' own agent modes, run as nodes.
