@@ -1,0 +1,7 @@
+{
+  "_about": "Assinatura usada pelo modelo. kind: claude | codex | gemini. Limites de chamadas por passada e por dia.",
+  "kind": "claude",
+  "model": "haiku",
+  "per_pass_cap": 6,
+  "per_day_cap": 60
+}

@@ -1,0 +1,10 @@
+{
+  "_about": "Regras em ordem, a primeira que casa define a tag. field: group | id | source | title; pattern = regex.",
+  "order": ["pessoal", "avulsos"],
+  "default": "pessoal",
+  "rules": [{"field": "group", "pattern": "^email$", "tag": "avulsos"}],
+  "descriptions": {
+    "pessoal": "Pessoal: contas, bancos, saúde, compras.",
+    "avulsos": "Pontas soltas: e-mails sem projeto."
+  }
+}
