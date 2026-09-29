@@ -47,13 +47,21 @@ var ACTIONS = {
   'docs.read': function (a) {
     return DocumentApp.openById(a.id).getBody().getText();
   },
+  // Spike cleanup only (a customer account runs this test): remove what the test created.
+  'gmail.deleteDraft': function (a) {
+    GmailApp.getDraft(a.id).deleteDraft();
+    return true;
+  },
+  'drive.trash': function (a) {
+    DriveApp.getFileById(a.id).setTrashed(true);
+    return true;
+  },
 };
 
-// Run once from the editor: triggers the single consent screen for every scope above.
+// Run once from the editor. Apps Script asks for every scope the project uses on the first run,
+// so one harmless read is enough — nothing is created in the account.
 function authorize() {
   GmailApp.getInboxUnreadCount();
-  SpreadsheetApp.create('assistantOS authorize check');
-  DocumentApp.create('assistantOS authorize check');
 }
 
 function out(o) {
