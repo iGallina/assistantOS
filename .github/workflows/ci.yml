@@ -1,0 +1,23 @@
+name: ci
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run pytest -q
+      - name: init + doctor smoke (piped, as a scheduler would run it)
+        shell: bash
+        run: |
+          export AOS_HOME="$RUNNER_TEMP/aos"
+          uv run aos init | cat
+          uv run aos doctor | cat
+          test "${PIPESTATUS[0]}" = 0
