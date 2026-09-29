@@ -18,7 +18,7 @@ Source: `~/Projetos/AIS-OS/scripts/` (27 files, 2026-09-28) + `tools/`. Classes:
 | `mail-inbox.py` | macOS-bound | e-mail via Mail.app (two passes, body cache) | replace: IMAP app-password or Gmail API / Microsoft Graph (spike) — keep the two-pass + cache design |
 | `mail-send.sh` | macOS-bound | send via Mail.app | replace: open a draft only (never send on its own) |
 | `mac.sh` | macOS-bound | Calendar (icalBuddy), Reminders, Mail counts | replace: calendar API; tasks = Fizzy |
-| `aios-status.sh` | macOS-bound | what runs in the background (launchd) | replace: `assistant-os doctor` (Task Scheduler status) |
+| `aios-status.sh` | macOS-bound | what runs in the background (launchd) | replace: `assistantOS doctor` (Task Scheduler status) |
 | `my-tasks.sh` | macOS-bound | one-screen aggregator | superseded by the page + Fizzy |
 | `em-aberto.template.html` | legacy | old artifact version of the page | drop |
 

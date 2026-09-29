@@ -8,7 +8,7 @@ Owner-operators — people who run a small business or practice themselves (clin
 
 Messages that need the owner get lost between channels. A client asks something on WhatsApp, a supplier replies by e-mail, something delegated never comes back — and nothing reminds the owner at the right moment. Generic chatbots answer questions; they don't keep the owner's open loops.
 
-## What assistant-os does (the wedge — to validate in Phase 1)
+## What assistantOS does (the wedge — to validate in Phase 1)
 
 One loop, measured:
 1. **Listen** to the owner's open loops (WhatsApp via `wacli`, e-mail) — code decides the scope, never the model.

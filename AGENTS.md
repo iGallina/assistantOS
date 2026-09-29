@@ -1,4 +1,4 @@
-# assistant-os
+# assistantOS
 
 An installable personal AI assistant for owner-operators: **Python + PowerShell install scripts** that set up **Claude Code or Codex CLI** with the user's LLM of preference, **Jev** (TypeSafe System One) for fast classification, and open-source tooling (**Fizzy** as the phone surface, WhatsApp via `wacli`, e-mail, a scheduled loop) — so the messages and tasks that need the owner never get lost.
 
@@ -12,10 +12,10 @@ Born from Ian Gallina's personal AIOS (`~/Projetos/AIS-OS`, private), which runs
 |---|---|
 | First customer | Owner-operators (InsightLab's base) who work on **Windows + phone**, not Mac |
 | Core | Python (all OSes) + PowerShell (Windows) scripts — no executables, no Rust for now (Rust only later, for tools shipped or run online, never compiled on the user's PC). Agent runtime = Claude Code or Codex CLI (user's provider: OpenRouter, OpenAI, Anthropic…); Jev via its HTTP API for classification |
-| Engine | Stays Python stdlib (portable, already proven in AIS-OS) until a measured reason to rewrite |
+| Engine | Python; Pydantic models for config and every LLM output (2026-09-29). Agent layer: LangChain scope pending |
 | Business | Open source (MIT). Ian's revenue = education and services on top (courses, guides, cohorts, done-with-you setup) |
 | Licence | Kit-derived files keep Nate Herk's MIT notice (`NOTICE`); the "Three Ms of AI™" name/branding is not used here |
-| Repo | Private `iGallina/assistant-os` until the first install works on a real Windows machine, then public. Each installation = the user's own **private** repo created from it with `upstream` = the main repo (not a GitHub fork: forks of a public repo are public); a skill walks the user through the GitHub account + repo |
+| Repo | Private `iGallina/assistantOS` until the first install works on a real Windows machine, then public. Each installation = the user's own **private** repo created from it with `upstream` = the main repo (not a GitHub fork: forks of a public repo are public); a skill walks the user through the GitHub account + repo |
 | Secrets | Bitwarden: `bws` (Secrets Manager, machine token) for the agent's unattended runs, `bw` for the owner's own vault; a skill installs and maintains both |
 | Upstream reports | Bugs/improvements to the core go back to the main repo only after a **local anonymizer** (deterministic patterns + contacts list first; Jev only on already-masked text) and the owner's review |
 | Updates | `core/` (replaced on update) vs `local/` (owner's scripts + config, never touched); tagged releases + changelog + numbered migrations + self-test + rollback, via an `update` skill |

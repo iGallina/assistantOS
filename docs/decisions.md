@@ -77,3 +77,9 @@ Jev ties Haiku on quality, is ~40× faster and returns tunable probabilities →
 - **Backups + clean uninstall/export:** in the MVP. The first failed install must not cost the client their data.
 - **Language:** pt-BR first; every user-facing string in separate files so English is a translation, not a rewrite.
 - **Phase 1 order:** Windows spikes first (cheap yes/no; a "no" on wacli or the agent runtime changes the pitch), interviews after.
+
+## 2026-09-29 — Name, Pydantic, LangChain (Ian)
+
+- **Renamed** `assistant-os` → **assistantOS**: folder `~/Projetos/assistantOS`, repo `iGallina/assistantOS` (private). Entries above keep the old name as written.
+- **Pydantic (adopted):** the engine stops being stdlib-only. Pydantic models define every per-user config file (contacts, tags, providers) and every LLM output (brief, request plan, triage), and `model_json_schema()` generates the schema sent to the model — one definition validates both what the user writes and what the model returns. Installed by uv; Windows wheels exist.
+- **LangChain (proposed, pending Ian's scope call):** see the scoring in the 2026-09-29 conversation. Question: does LangChain carry only the model calls (brief, triage writing, request planning; `init_chat_model` + `with_structured_output(PydanticModel)` over the user's provider), or also replace Claude Code/Codex for the tool-using agent runs?

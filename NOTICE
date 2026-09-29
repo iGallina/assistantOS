@@ -1,12 +1,12 @@
-assistant-os builds on the AIS-OS starter kit by Nate Herk
+assistantOS builds on the AIS-OS starter kit by Nate Herk
 (https://github.com/nateherkai/AIS-OS), used under the MIT License:
 
   Copyright (c) 2026 Nate Herk
   (full MIT text in the upstream repository; it applies to every file in this
   repository derived from the kit, which keep this notice)
 
-"The Three Ms of AI" is a trademark of Nate Herk. assistant-os does not use that
+"The Three Ms of AI" is a trademark of Nate Herk. assistantOS does not use that
 name or its branding.
 
-Third-party tools installed by assistant-os (Claude Code, Codex CLI, wacli,
+Third-party tools installed by assistantOS (Claude Code, Codex CLI, wacli,
 Fizzy, whisper.cpp, uv) are separate projects under their own licences.
