@@ -455,13 +455,13 @@ def test_items_events_marks_roundtrip(tmp_path):
     s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
     s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat (COPA)", tag="copa"))
     assert s.item("wa:1").title == "Kat (COPA)"
-    # 12:30 UTC is later than 09:00 BRT (= 12:00 UTC) even though "09" sorts first as text
-    s.add_event(Event(item_id="wa:1", at=datetime(2026, 9, 29, 12, 30, tzinfo=timezone.utc), direction="in", text="b"))
-    s.add_event(Event(item_id="wa:1", at=datetime(2026, 9, 29, 9, 0, tzinfo=BRT), direction="out", text="a"))
+    # 10:00 BRT (= 13:00 UTC) is later than 12:30 UTC, though "10:00-03:00" sorts first as raw text
+    s.add_event(Event(item_id="wa:1", at=datetime(2026, 9, 29, 10, 0, tzinfo=BRT), direction="out", text="b"))
+    s.add_event(Event(item_id="wa:1", at=datetime(2026, 9, 29, 12, 30, tzinfo=timezone.utc), direction="in", text="a"))
     assert [e.text for e in s.events("wa:1")] == ["a", "b"]
     m = Mark(item_id="wa:1", status=Status.AGUARDANDO, at=datetime.now(timezone.utc), who="Kat", until=date(2026, 10, 1))
     s.set_mark(m)
-    assert s.mark("wa:1") == m.model_copy(update={"at": m.at.astimezone(timezone.utc)})
+    assert s.mark("wa:1") == m
     assert s.item("nope") is None and s.mark("nope") is None
 
 
