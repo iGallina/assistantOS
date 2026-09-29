@@ -57,8 +57,9 @@ jobs:
             $exe = Get-ChildItem "$env:TEMP\$t" -Recurse -Filter "$t.exe" | Select-Object -First 1
             Copy-Item $exe.FullName $bin
             $motw = if (Get-Item "$bin\$t.exe" -Stream Zone.Identifier -ErrorAction SilentlyContinue) {'MOTW set'} else {'no MOTW'}
-            $ver = (& "$bin\$t.exe" --version 2>&1 | Select-Object -First 1)
-            "| $t | $(if ($LASTEXITCODE -eq 0) {'PASS'} else {"FAIL rc=$LASTEXITCODE"}) $ver ($motw) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+            $out = & "$bin\$t.exe" --version 2>&1; $rc = $LASTEXITCODE
+            $ver = @($out)[0]
+            "| $t | $(if ($rc -eq 0) {'PASS'} else {"FAIL rc=$rc"}) $ver ($motw) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
           }
 
       - name: Bitwarden bw (npm)
