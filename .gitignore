@@ -6,3 +6,8 @@ config/*.json
 __pycache__/
 target/
 .DS_Store
+local/config/*.json
+!local/config/*.example.json
+local/state/
+.venv/
+.pytest_cache/
