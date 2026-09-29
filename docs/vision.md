@@ -27,7 +27,7 @@ KPI: messages that needed the owner and went unanswered for more than 24 h.
 
 ## Architecture (target)
 
-- `assistant-os.exe` (Rust): install/check the agent runtime (Claude Code or Codex CLI + provider config), Python via `uv`, `wacli`; collect keys (LLM, Jev, Fizzy); write per-user config from `*.example.json`; register the scheduled loop (Windows Task Scheduler; launchd on macOS); `doctor`, `uninstall`, self-test (one Jev call, one Fizzy card, one listener pass).
+- Install: a PowerShell script on Windows (`irm …/install.ps1 | iex`) and a shell script on macOS/Linux — no executables. They install Python (uv), git, the agent runtime (Claude Code or Codex + provider config), `wacli`, Bitwarden (`bw`, `bws`); pull secrets from Bitwarden; write per-user config from `*.example.json`; register the scheduled loop (Windows Task Scheduler; launchd/cron elsewhere); `doctor`, `update`, `uninstall`, self-test (one Jev call, one Fizzy card, one listener pass).
 - Engine (Python stdlib, from AIS-OS): listener, classifier calls, briefs, request worker, Fizzy mirror, local page. Ported component by component per `docs/engine-inventory.md`.
 
 ## Roadmap
@@ -36,7 +36,7 @@ KPI: messages that needed the owner and went unanswered for more than 24 h.
 |---|---|---|
 | 0 | Project + context | this repo exists with vision, decisions, inventory (2026-09-28) |
 | 1 | Validate the wedge | 3–5 owner interviews in `docs/discovery.md`; Windows spikes answered in `docs/spikes/` |
-| 2 | Installer MVP (Windows) | a clean Windows PC goes from download to a Fizzy card for a real WhatsApp message, without Ian touching it |
+| 2 | Install MVP (Windows, PowerShell + Python) | a clean Windows PC goes from download to a Fizzy card for a real WhatsApp message, without Ian touching it |
 | 3 | Education layer | lesson 1 published from the Jev bake-off; every phase ships a lesson |
 
 ## Open questions (Phase 1)

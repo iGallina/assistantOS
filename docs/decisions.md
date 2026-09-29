@@ -59,3 +59,14 @@ Jev ties Haiku on quality, is ~40× faster and returns tunable probabilities →
 - Backups of local state (SQLite, config) and a clean uninstall/export.
 - Language: pt-BR first for Brazilian owners.
 - WhatsApp: unofficial client (`wacli`) risk on customers' numbers vs the official Business API.
+
+## 2026-09-29 — Answers to the open items (Ian)
+
+- **Per-install repo:** the user's own private repo created from the main one, `upstream` = main repo; a skill guides GitHub account creation and the repo setup.
+- **Secrets:** Bitwarden — `bws` for the agent's unattended runs, `bw` for the owner's vault.
+- **No Rust for now, no executables.** Python everywhere (small scripts) + PowerShell on Windows. Rust later only for tools shipped or run online, never compiled on the user's PC. → No code-signing certificate needed: SmartScreen flags unsigned *executables* from any source; scripts fetched with git or `irm | iex` are not flagged (the install script handles PowerShell's execution policy).
+- **Upstream reports:** a local anonymizer before anything leaves: deterministic patterns (e-mails, phones, CPF/CNPJ, cards, keys/tokens) + the user's contacts list first; Jev only on the already-masked text (Jev is a hosted API — sending raw logs to it would leak what we are hiding); the owner reviews every report.
+- **Privacy law:** the software runs on the user's own computer with no server of ours; compliance is the user's responsibility — stated plainly in the docs.
+- **Costs:** a skill estimates and reports the daily cost of the whole setup per provider (OpenRouter, OpenAI, Anthropic, Jev); the daily report shows spend.
+- **Updates:** `core/` vs `local/` split; tagged releases, changelog, numbered migrations, self-test, rollback — via an `update` skill; CI on Windows + macOS from the first release.
+- **WhatsApp:** keep the current skills/client for now; the official Business API is being worked on separately.
