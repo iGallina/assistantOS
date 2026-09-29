@@ -88,4 +88,4 @@ jobs:
 
       - name: Print summary to the log
         if: always()
-        run: Get-Content $env:GITHUB_STEP_SUMMARY
+        run: Get-ChildItem (Split-Path $env:GITHUB_STEP_SUMMARY) -Filter 'step_summary_*' | Sort-Object LastWriteTime | Get-Content
