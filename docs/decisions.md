@@ -83,3 +83,9 @@ Jev ties Haiku on quality, is ~40× faster and returns tunable probabilities →
 - **Renamed** `assistant-os` → **assistantOS**: folder `~/Projetos/assistantOS`, repo `iGallina/assistantOS` (private). Entries above keep the old name as written.
 - **Pydantic (adopted):** the engine stops being stdlib-only. Pydantic models define every per-user config file (contacts, tags, providers) and every LLM output (brief, request plan, triage), and `model_json_schema()` generates the schema sent to the model — one definition validates both what the user writes and what the model returns. Installed by uv; Windows wheels exist.
 - **LangChain (proposed, pending Ian's scope call):** see the scoring in the 2026-09-29 conversation. Question: does LangChain carry only the model calls (brief, triage writing, request planning; `init_chat_model` + `with_structured_output(PydanticModel)` over the user's provider), or also replace Claude Code/Codex for the tool-using agent runs?
+
+## 2026-09-29 — Subscription-first, a hard-coded core, LangGraph on the CLIs (Ian)
+
+- **Each customer:** clones the repo (code + skills), signs up for a subscription (Claude, ChatGPT/Codex, Gemini) and runs everything on it — no API keys required for the model layer. Jev stays an API key (classification).
+- **The core is a real Python package**, not loose scripts: `assistantos` (Pydantic models, LangGraph graph for the loop, a CLI entry point, tests), versioned and updated as `core/`. Skills become thin: they explain when to use a capability and call the package's commands; behaviour lives in code.
+- **LangChain/LangGraph run on the subscription CLIs**: one LangChain chat model per backend (`claude -p`, `codex exec`, `gemini -p`), selected by the user's config. Resolves the pending LangChain question (neither A nor B: LangChain everywhere, but the model behind it is the subscription CLI). Evidence: `docs/spikes/2026-09-29-langgraph-on-subscription.md`.
