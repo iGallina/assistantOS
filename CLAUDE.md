@@ -26,6 +26,7 @@ Born from Ian Gallina's personal AIOS (`~/Projetos/AIS-OS`, private), which runs
 
 ## Where things live
 
+- `src/assistantos/` — the core package (`aos` CLI); tests in `tests/`, run `uv run pytest`; CI on Windows + macOS (`.github/workflows/ci.yml`). Design: `docs/superpowers/specs/`, plans: `docs/superpowers/plans/`.
 - `docs/vision.md` — who, why, the wedge, the model.
 - `docs/decisions.md` — append-only decisions + lessons carried from AIS-OS.
 - `docs/engine-inventory.md` — every AIS-OS component: portable / macOS-bound / Ian-specific, and its Windows plan.
