@@ -48,7 +48,7 @@ Source: `~/Projetos/AIS-OS/scripts/` (27 files, 2026-09-28) + `tools/`. Classes:
 | AIS-OS | Class | Windows plan |
 |---|---|---|
 | `tools/broker/` (event inbox → Fizzy, dedup, reopen) | portable | keep — runs on any always-on machine or a small VPS |
-| `tools/menubar/` (Swift menu-bar icon) | macOS-bound | replace: Windows tray icon (count to decide + top 5), built into the Rust binary |
+| `tools/menubar/` (Swift menu-bar icon) | macOS-bound | deferred — Fizzy on the phone is the v1 surface; later a tray icon in Python |
 | `launchd/*.plist` (09:30 sheet, 5-min loop, sync daemons) | macOS-bound | replace: Windows Task Scheduler entries / a service registered by the installer |
 
 \* portable with the listed Mac-specific calls swapped out.
