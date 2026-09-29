@@ -1,0 +1,87 @@
+# Phase 1 spike: can the whole stack install and run on a clean Windows machine,
+# with scripts only (no installer .exe of ours)? One step per tool; each records
+# PASS/FAIL in the job summary. Runs by hand only.
+name: windows-spike
+on: workflow_dispatch
+
+jobs:
+  spike:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Context
+        run: |
+          "| Check | Result |`n|---|---|" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "| OS | $((Get-CimInstance Win32_OperatingSystem).Caption) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "| ExecutionPolicy (runner, not a consumer default) | $(Get-ExecutionPolicy) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          New-Item -ItemType Directory -Force "$env:USERPROFILE\aos\bin" | Out-Null
+          "$env:USERPROFILE\aos\bin" | Out-File -Append $env:GITHUB_PATH
+
+      - name: Python via uv
+        continue-on-error: true
+        run: |
+          irm https://astral.sh/uv/install.ps1 | iex
+          $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+          uv python install 3.12
+          $v = uv run --python 3.12 python -c "import sqlite3,sys,json,urllib.request;print(sys.version.split()[0],'sqlite',sqlite3.sqlite_version)"
+          "| Python (uv) | PASS $v |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+      - name: Claude Code (native installer script)
+        continue-on-error: true
+        run: |
+          irm https://claude.ai/install.ps1 | iex
+          $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+          "| Claude Code | PASS $(claude --version) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+      - name: Codex CLI (npm)
+        continue-on-error: true
+        run: |
+          npm install -g @openai/codex
+          "| Codex CLI | PASS $(codex --version) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+      - name: Third-party binaries fetched by script (wacli, fizzy, bws)
+        continue-on-error: true
+        run: |
+          $bin = "$env:USERPROFILE\aos\bin"
+          $urls = @{
+            wacli = 'https://github.com/openclaw/wacli/releases/download/v0.19.0/wacli_0.19.0_windows_amd64.zip'
+            fizzy = 'https://github.com/basecamp/fizzy-cli/releases/download/v4.0.1/fizzy_4.0.1_windows_amd64.zip'
+            bws   = 'https://github.com/bitwarden/sdk-sm/releases/download/bws-v2.1.0/bws-x86_64-pc-windows-msvc-2.1.0.zip'
+          }
+          foreach ($t in $urls.Keys) {
+            $zip = "$env:TEMP\$t.zip"
+            Invoke-WebRequest $urls[$t] -OutFile $zip
+            Expand-Archive $zip -DestinationPath "$env:TEMP\$t" -Force
+            $exe = Get-ChildItem "$env:TEMP\$t" -Recurse -Filter "$t.exe" | Select-Object -First 1
+            Copy-Item $exe.FullName $bin
+            $motw = if (Get-Item "$bin\$t.exe" -Stream Zone.Identifier -ErrorAction SilentlyContinue) {'MOTW set'} else {'no MOTW'}
+            $ver = (& "$bin\$t.exe" --version 2>&1 | Select-Object -First 1)
+            "| $t | $(if ($LASTEXITCODE -eq 0) {'PASS'} else {"FAIL rc=$LASTEXITCODE"}) $ver ($motw) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          }
+
+      - name: Bitwarden bw (npm)
+        continue-on-error: true
+        run: |
+          npm install -g @bitwarden/cli
+          "| bw | PASS $(bw --version) |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+      - name: wacli store opens without a login
+        continue-on-error: true
+        run: |
+          $out = wacli --store "$env:TEMP\wa" chats list 2>&1 | Out-String
+          $first = ($out -split "`n")[0].Trim() -replace '\|','/'
+          "| wacli store (no auth) | rc=$LASTEXITCODE: $first |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+
+      - name: Task Scheduler 1-min loop (as the 5-min loop would run)
+        continue-on-error: true
+        run: |
+          $log = "$env:USERPROFILE\aos\tick.log"
+          $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command `"Get-Date -Format o | Add-Content '$log'`""
+          $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(10) -RepetitionInterval (New-TimeSpan -Minutes 1)
+          Register-ScheduledTask -TaskName 'aos-tick' -Action $action -Trigger $trigger -Force | Out-Null
+          Start-Sleep -Seconds 150
+          $n = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
+          "| Task Scheduler repeat | $(if ($n -ge 2) {'PASS'} else {'FAIL'}) $n ticks in 150 s |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          Unregister-ScheduledTask -TaskName 'aos-tick' -Confirm:$false

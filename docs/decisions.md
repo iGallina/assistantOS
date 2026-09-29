@@ -70,3 +70,10 @@ Jev ties Haiku on quality, is ~40× faster and returns tunable probabilities →
 - **Costs:** a skill estimates and reports the daily cost of the whole setup per provider (OpenRouter, OpenAI, Anthropic, Jev); the daily report shows spend.
 - **Updates:** `core/` vs `local/` split; tagged releases, changelog, numbered migrations, self-test, rollback — via an `update` skill; CI on Windows + macOS from the first release.
 - **WhatsApp:** keep the current skills/client for now; the official Business API is being worked on separately.
+
+## 2026-09-29 — Remaining open items (Ian: "follow your recommendations")
+
+- **Support access:** none in v1 — the client shares their screen when needed. No always-on way in (every open door is a liability carried per client). Revisit when a paying client asks.
+- **Backups + clean uninstall/export:** in the MVP. The first failed install must not cost the client their data.
+- **Language:** pt-BR first; every user-facing string in separate files so English is a translation, not a rewrite.
+- **Phase 1 order:** Windows spikes first (cheap yes/no; a "no" on wacli or the agent runtime changes the pitch), interviews after.
