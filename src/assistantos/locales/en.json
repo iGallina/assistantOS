@@ -1,0 +1,8 @@
+{
+  "init.created": "Created in {dir}: {files}. Edit them and run `aos doctor`.",
+  "init.nothing": "Config already exists in {dir} — nothing changed.",
+  "doctor.config_ok": "config is valid",
+  "doctor.config_bad": "config has problems:",
+  "doctor.store_ok": "local database ready (version {version})",
+  "doctor.store_bad": "local database error: {error}"
+}

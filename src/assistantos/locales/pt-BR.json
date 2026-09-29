@@ -1,0 +1,8 @@
+{
+  "init.created": "Criados em {dir}: {files}. Edite-os e rode `aos doctor`.",
+  "init.nothing": "Configuração já existe em {dir} — nada foi alterado.",
+  "doctor.config_ok": "configuração válida",
+  "doctor.config_bad": "configuração com problemas:",
+  "doctor.store_ok": "banco local pronto (versão {version})",
+  "doctor.store_bad": "banco local com erro: {error}"
+}
