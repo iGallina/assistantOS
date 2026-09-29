@@ -72,7 +72,7 @@ jobs:
         run: |
           $out = wacli --store "$env:TEMP\wa" chats list 2>&1 | Out-String
           $first = ($out -split "`n")[0].Trim() -replace '\|','/'
-          "| wacli store (no auth) | rc=$LASTEXITCODE: $first |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
+          "| wacli store (no auth) | rc=${LASTEXITCODE}: $first |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
 
       - name: Task Scheduler 1-min loop (as the 5-min loop would run)
         continue-on-error: true
@@ -85,3 +85,7 @@ jobs:
           $n = if (Test-Path $log) { (Get-Content $log).Count } else { 0 }
           "| Task Scheduler repeat | $(if ($n -ge 2) {'PASS'} else {'FAIL'}) $n ticks in 150 s |" | Out-File -Append $env:GITHUB_STEP_SUMMARY
           Unregister-ScheduledTask -TaskName 'aos-tick' -Confirm:$false
+
+      - name: Print summary to the log
+        if: always()
+        run: Get-Content $env:GITHUB_STEP_SUMMARY
