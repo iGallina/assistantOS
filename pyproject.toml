@@ -3,7 +3,11 @@ name = "assistantos"
 version = "0.1.0"
 description = "Personal AI assistant for owner-operators"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.9"]
+dependencies = [
+    "langgraph>=1.2.12",
+    "pydantic>=2.9",
+    "tzdata>=2026.4",
+]
 
 [project.scripts]
 aos = "assistantos.cli:main"

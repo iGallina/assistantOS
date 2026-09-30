@@ -96,6 +96,7 @@ class Event(Strict):
     at: AwareDatetime
     direction: Literal["in", "out"]
     text: str = ""
+    ext_id: str | None = None  # the source's own message id; a repeated poll never duplicates an event
 
 
 class Mark(Strict):

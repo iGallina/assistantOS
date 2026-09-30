@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
 
-from assistantos.models import Event, Item, Mark, Status
+from assistantos.models import Brief, Event, Item, Mark, Status
 from assistantos.store import SCHEMA_VERSION, Store
 
 BRT = timezone(timedelta(hours=-3))
@@ -32,3 +32,47 @@ def test_log_run(tmp_path):
     s = Store(tmp_path / "aos.db")
     s.log_run("brief", "claude", "haiku", 9.9, True)
     assert s.db.execute("select job, ok from runs").fetchall() == [("brief", 1)]
+
+
+BRIEF = Brief(mudou="m", decisao="d", opcoes=["a"], proximo_passo="p", rascunho="r", urgencia="hoje")
+T0 = datetime(2026, 9, 30, 12, 0, tzinfo=timezone.utc)
+
+
+def test_ext_id_dedupes(tmp_path):
+    s = Store(tmp_path / "aos.db")
+    s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
+    e = Event(item_id="wa:1", at=T0, direction="in", text="oi", ext_id="wa:m1")
+    assert s.add_event(e) is True and s.add_event(e) is False
+    assert len(s.events("wa:1")) == 1
+
+
+def test_last_event_brief_label_meta_runs(tmp_path):
+    s = Store(tmp_path / "aos.db")
+    s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
+    s.add_event(Event(item_id="wa:1", at=T0, direction="in", text="a"))
+    s.add_event(Event(item_id="wa:1", at=T0 + timedelta(minutes=5), direction="out", text="b"))
+    assert s.last_event("wa:1").text == "b" and s.last_event("wa:1", "in").text == "a"
+    assert s.last_event("nope") is None
+    s.set_brief("wa:1", BRIEF, T0)
+    assert s.brief("wa:1") == (BRIEF, T0)
+    s.set_label("wa:1", T0, 0.2)
+    assert s.label("wa:1") == (T0, 0.2)
+    s.set_meta("cursor:whatsapp", "x")
+    assert s.get_meta("cursor:whatsapp") == "x" and s.get_meta("nope") is None
+    s.log_run("brief", "claude", "haiku", 1.0, False)
+    assert s.runs_today("brief") == 1 and s.runs_today("tag") == 0
+    assert [i.id for i in s.items()] == ["wa:1"]
+
+
+def test_v1_database_upgrades_with_its_data(tmp_path, monkeypatch):
+    import assistantos.store as st
+    monkeypatch.setattr(st, "MIGRATIONS", st.MIGRATIONS[:1])
+    old = st.Store(tmp_path / "aos.db")
+    old.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
+    old.db.execute("INSERT INTO events(item_id, at, direction, text) VALUES ('wa:1', ?, 'in', 'antes')", (T0.isoformat(),))
+    old.db.commit()
+    old.close()
+    monkeypatch.undo()
+    s = Store(tmp_path / "aos.db")
+    assert s.version() == SCHEMA_VERSION == 2
+    assert [e.text for e in s.events("wa:1")] == ["antes"]
