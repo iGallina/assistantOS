@@ -25,7 +25,12 @@ class WhatsApp:
         # a read-only URI: the plugin can never write the store wacli owns
         return sqlite3.connect(Path(cfg.store).expanduser().resolve().as_uri() + "?mode=ro", uri=True, timeout=10)
 
+    def describe(self, cfg: WhatsAppConfig) -> str:
+        return f"{len(cfg.chats)} chats"
+
     def check(self, cfg: WhatsAppConfig) -> str | None:
+        if not cfg.chats:
+            return None  # fresh install: nothing to read yet, nothing to check
         try:
             with closing(self._db(cfg)) as c:
                 c.execute("SELECT 1 FROM messages LIMIT 1").fetchall()
@@ -34,6 +39,8 @@ class WhatsApp:
         return None
 
     def poll(self, cfg: WhatsAppConfig, since: datetime | None) -> tuple[list[Item], list[Event]]:
+        if not cfg.chats:
+            return [], []
         start = max(time.time() - cfg.floor_days * 86400, since.timestamp() if since else 0)
         q = ",".join("?" * len(cfg.chats))
         with closing(self._db(cfg)) as c:

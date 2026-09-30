@@ -1,0 +1,6 @@
+{
+  "_about": "WhatsApp pelo wacli (somente leitura). chats: os IDs dos seus loops abertos, ex. 5561999999999@s.whatsapp.net ou <id>@g.us. Vazio = nada é lido ainda.",
+  "store": "~/.wacli/wacli.db",
+  "chats": [],
+  "floor_days": 7
+}

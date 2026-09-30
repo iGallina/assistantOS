@@ -4,5 +4,9 @@
   "doctor.config_ok": "configuração válida",
   "doctor.config_bad": "configuração com problemas:",
   "doctor.store_ok": "banco local pronto (versão {version})",
-  "doctor.store_bad": "banco local com erro: {error}"
+  "doctor.store_bad": "banco local com erro: {error}",
+  "run.summary": "Passada: {new} mensagens novas, {briefed} briefs, {errors} erros.",
+  "doctor.plugin_ok": "plugin {name}: {detail}",
+  "doctor.plugin_bad": "plugin {name}: {problem}",
+  "run.backend_bad": "modelo indisponível: {error}"
 }

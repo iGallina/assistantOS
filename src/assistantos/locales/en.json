@@ -4,5 +4,9 @@
   "doctor.config_ok": "config is valid",
   "doctor.config_bad": "config has problems:",
   "doctor.store_ok": "local database ready (version {version})",
-  "doctor.store_bad": "local database error: {error}"
+  "doctor.store_bad": "local database error: {error}",
+  "run.summary": "Pass: {new} new messages, {briefed} briefs, {errors} errors.",
+  "doctor.plugin_ok": "plugin {name}: {detail}",
+  "doctor.plugin_bad": "plugin {name}: {problem}",
+  "run.backend_bad": "model unavailable: {error}"
 }
