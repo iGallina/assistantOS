@@ -1,6 +1,6 @@
 # assistantOS core package — design
 
-Status: draft for Ian's review (2026-09-29). Decisions it rests on: `docs/decisions.md` (2026-09-28 → 2026-09-29). Evidence: `docs/spikes/`.
+Status: approved by Ian 2026-09-29. Decisions it rests on: `docs/decisions.md` (2026-09-28 → 2026-09-29). Evidence: `docs/spikes/`.
 
 ## Goal
 
@@ -56,9 +56,9 @@ collect  → each enabled plugin's poll(since) → Events           (code)
 reconcile→ status per item from events + marks                   (code)
 classify → Jev: needs-the-owner score, tag suggestion            (API, falls back to "no label")
 select   → items whose brief is missing or older than last event (code; caps per pass/day)
-brief    → backend.with_schema(Brief)                            (subscription CLI)
+brief    → backend.ask(prompt, Brief)                            (subscription CLI)
 surface  → page data, Fizzy cards, one notification per pass     (code)
-requests → Jev triage → backend.with_schema(RequestPlan) → execute only allowlisted actions (code)
+requests → Jev triage → backend.ask(prompt, RequestPlan) → execute only allowlisted actions (code)
 ```
 
 Rules carried from AIS-OS: sweeps are code, the model drafts; a Jev label never hides an item; every model call writes one `runs` row (job, backend, model, seconds, ok) shown in the page and the daily report; a failed model call leaves the item unbriefed and visible, never dropped.
