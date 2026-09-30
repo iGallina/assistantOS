@@ -14,13 +14,13 @@ No executables of ours; no server of ours; nothing sent on the owner's behalf; n
 
 ```
 assistantOS/
-  pyproject.toml                  # package `assistantos`, entry point `aos`; deps: pydantic, langchain-core, langgraph
+  pyproject.toml                  # package `assistantos`, entry point `aos`; deps: pydantic, langgraph, langgraph-checkpoint-sqlite
   src/assistantos/
     models.py                     # Pydantic: config + domain + every LLM output
     store.py                      # SQLite: items, events, marks, briefs, requests, runs
     reconcile.py                  # status rules (ported from AIS-OS em-aberto.status)
     graph.py                      # the LangGraph loop (one pass per scheduler tick)
-    backends/                     # LangChain chat models over subscription CLIs
+    backends/                     # our own thin wrappers over subscription CLIs
       base.py  claude_cli.py  codex_cli.py  gemini_cli.py
     jev.py                        # classification client (ported as-is)
     plugins/                      # one module per integration
@@ -63,11 +63,11 @@ requests → Jev triage → backend.with_schema(RequestPlan) → execute only al
 
 Rules carried from AIS-OS: sweeps are code, the model drafts; a Jev label never hides an item; every model call writes one `runs` row (job, backend, model, seconds, ok) shown in the page and the daily report; a failed model call leaves the item unbriefed and visible, never dropped.
 
-The pass holds a file lock (one pass at a time, as launchd guaranteed on the Mac). No LangGraph checkpointer in v1 — the SQLite store is the state; add one when a pass needs to resume mid-way.
+The pass holds a file lock (one pass at a time, as launchd guaranteed on the Mac). LangGraph checkpoints to `local/state/graph.db` (SqliteSaver): anything that needs the owner is an `interrupt` that survives the process exiting and resumes with `Command(resume=…)` when the owner acts (page, Fizzy); heavy jobs fan out one worker per item with `Send` (proven: `docs/spikes/2026-09-29-langgraph-durable-approval.py`). Decision 2026-09-29: LangGraph yes, LangChain model wrappers no.
 
 ## Backends
 
-`backends/base.py`: `CLIChatModel(BaseChatModel)` with `response_schema: dict | None` (field names must not shadow LangChain attributes — `schema` and `output_schema` both broke in the spike). Subclasses only build the command and read the result:
+`backends/base.py`: `Backend.ask(prompt, output: type[M], job) -> M` — sends the prompt with `output.model_json_schema()`, validates the answer with `output.model_validate_json`, logs one `runs` row either way. No LangChain base class (its attribute names collided twice in the spikes); an API-key backend can later wrap a LangChain model behind the same method. Subclasses only build the command and read the result:
 
 | Backend | Command | Result |
 |---|---|---|

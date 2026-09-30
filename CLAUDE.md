@@ -12,7 +12,7 @@ Born from Ian Gallina's personal AIOS (`~/Projetos/AIS-OS`, private), which runs
 |---|---|
 | First customer | Owner-operators (InsightLab's base) who work on **Windows + phone**, not Mac |
 | Core | Python (all OSes) + PowerShell (Windows) scripts — no executables, no Rust for now (Rust only later, for tools shipped or run online, never compiled on the user's PC). Agent runtime = Claude Code or Codex CLI (user's provider: OpenRouter, OpenAI, Anthropic…); Jev via its HTTP API for classification |
-| Engine | Python package `assistantos` (hard-coded core): Pydantic models for config and every LLM output, LangGraph for the loop; model calls go through the user's subscription CLI (`claude -p`, `codex exec`, `gemini -p`) wrapped as LangChain chat models — no API key needed. Skills are thin. |
+| Engine | Python package `assistantos` (hard-coded core): Pydantic models for config and every LLM output, LangGraph for the loop and jobs (SQLite checkpoints, owner approvals as interrupts); model calls go through the user's subscription CLI (`claude -p`, `codex exec`, `gemini -p`) via our own thin `Backend.ask` wrappers — no LangChain model layer, no API key needed. Skills are thin. |
 | Business | Open source (MIT). Ian's revenue = education and services on top (courses, guides, cohorts, done-with-you setup) |
 | Licence | Kit-derived files keep Nate Herk's MIT notice (`NOTICE`); the "Three Ms of AI™" name/branding is not used here |
 | Repo | Private `iGallina/assistantOS` until the first install works on a real Windows machine, then public. Each installation = the user's own **private** repo created from it with `upstream` = the main repo (not a GitHub fork: forks of a public repo are public); a skill walks the user through the GitHub account + repo |
