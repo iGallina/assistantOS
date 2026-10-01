@@ -55,7 +55,7 @@ def test_first_pass_briefs_open_items_newest_first(tmp_path):
     s, b = Store(tmp_path / "aos.db"), FakeBackend()
     r = run(s, FakePlugin(3), b)
     assert r["new_events"] == 3 and r["briefed"] == ["i2", "i1", "i0"] and r["errors"] == []
-    assert "pedido 2" in b.prompts[0] and "Ana" in b.prompts[0]
+    assert "pedido 2" in b.prompts[0] and "Ana" in b.prompts[0] and "sem numerar" in b.prompts[0]
     assert s.brief("i0") is not None
 
 

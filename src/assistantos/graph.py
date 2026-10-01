@@ -16,7 +16,7 @@ OPEN = (Status.REABERTO, Status.VENCIDO, Status.ABERTO)  # also the brief order:
 HISTORY = 15
 
 PROMPT = """Você prepara um brief de decisão para {owner}. Leia a conversa e diga o que mudou, qual decisão {owner}
-precisa tomar agora, 2 ou 3 opções, o próximo passo e um rascunho de resposta no tom de {owner}: cordial, direto,
+precisa tomar agora, 2 ou 3 opções (sem numerar: a lista já é numerada na tela), o próximo passo e um rascunho de resposta no tom de {owner}: cordial, direto,
 sem emoji, sem enrolação. Não invente fatos que não estão na conversa.
 
 Item: {title}

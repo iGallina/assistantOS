@@ -85,6 +85,23 @@ def cmd_run(h: Path) -> int:
     return 0
 
 
+def cmd_page(h: Path, port: int) -> int:
+    from .page.server import make_server
+    lang, tz = "pt-BR", "America/Sao_Paulo"
+    try:
+        o = load_config(h / "local" / "config").owner
+        lang, tz = o.language, o.timezone
+    except ConfigError:
+        pass  # the page still opens; `aos doctor` names the config problem
+    srv = make_server(h / "local" / "state" / "aos.db", port, lang, lambda: datetime.now(ZoneInfo(tz)).date())
+    print(f"http://127.0.0.1:{srv.server_address[1]}")
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     for s in (sys.stdout, sys.stderr):
         if hasattr(s, "reconfigure"):
@@ -95,5 +112,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("init")
     sub.add_parser("doctor")
     sub.add_parser("run")
+    sub.add_parser("page").add_argument("--port", type=int, default=8422)
     a = p.parse_args(argv)
+    if a.cmd == "page":
+        return cmd_page(home(), a.port)
     return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run}[a.cmd](home())

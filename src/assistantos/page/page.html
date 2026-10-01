@@ -1,0 +1,157 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>assistantOS</title>
+<style>
+:root {
+  --bg: #f7f7f5; --card: #ffffff; --fg: #1d1d1b; --muted: #6b6b66; --line: #e3e3de;
+  --accent: #2f6f4f; --warn: #a3501b; --pill: #ecece7; --focus: #1f5fbf;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #161615; --card: #1f1f1d; --fg: #ecece7; --muted: #a3a39c; --line: #33332f;
+          --accent: #7cc19b; --warn: #e39a62; --pill: #2a2a27; --focus: #8ab4ff; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 16px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+h1 { font-size: 1.4rem; margin: 0; }
+h2 { font-size: 1.05rem; margin: 24px 0 8px; display: flex; gap: 8px; align-items: baseline; }
+h2 .n { color: var(--muted); font-weight: normal; }
+button { font: inherit; padding: 8px 12px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line);
+         background: var(--card); color: var(--fg); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--card); }
+button:focus-visible, summary:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+details.item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; margin: 8px 0; }
+details.item > summary { list-style: none; padding: 12px 14px; cursor: pointer; display: grid; gap: 2px; }
+details.item > summary::-webkit-details-marker { display: none; }
+.row1 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.title { font-weight: 600; }
+.pill { font-size: .8rem; padding: 1px 8px; border-radius: 99px; background: var(--pill); color: var(--muted); }
+.pill.warn { color: var(--warn); }
+.snippet { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.body { padding: 0 14px 14px; display: grid; gap: 10px; }
+.brief dt { font-weight: 600; margin-top: 6px; }
+.brief dd { margin: 0; }
+.draft { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.muted { color: var(--muted); }
+.wait { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.wait input { font: inherit; padding: 8px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line);
+              background: var(--card); color: var(--fg); }
+.events { display: grid; gap: 4px; font-size: .95rem; }
+.events .out { color: var(--muted); }
+a { color: var(--accent); }
+section + details > summary { cursor: pointer; }
+section + details > summary h2 { display: inline-flex; }
+</style>
+</head>
+<body>
+<main>
+  <header><h1 id="h1"></h1><button id="refresh"></button></header>
+  <div id="root"></div>
+</main>
+<script>
+const S = /*STRINGS*/{};
+const T = (k, v = {}) => (S["page." + k] || k).replace(/\{(\w+)\}/g, (_, n) => v[n] ?? "");
+const el = (tag, attrs = {}, ...kids) => {               // text only: message content is never parsed as HTML
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) k.startsWith("on") ? e.addEventListener(k.slice(2), v) : e.setAttribute(k, v);
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c instanceof Node ? c : String(c));
+  return e;
+};
+const SECTIONS = ["decidir", "abertos", "aguardando", "depois", "resolvidos"];
+const fmt = iso => new Date(iso).toLocaleString(document.documentElement.lang, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+const day = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;  // local date: toISOString is UTC and shifts the day after 21:00 in Brasília
+const plusWorkdays = n => { const d = new Date(); while (n) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) n--; } return day(d); };
+const open = new Set();
+
+async function mark(id, status, extra = {}) {
+  const r = await fetch("/api/mark", { method: "POST", headers: { "Content-Type": "application/json" },
+                                       body: JSON.stringify({ item_id: id, status, ...extra }) });
+  if (!r.ok) alert(T("error", { error: (await r.json()).error }));
+  load();
+}
+
+function briefBlock(i) {
+  if (!i.brief) return el("p", { class: "muted" }, T("no_brief"));
+  const b = i.brief;
+  return el("div", {},
+    i.brief_current ? null : el("p", { class: "pill warn" }, T("stale")),
+    el("dl", { class: "brief" },
+      el("dt", {}, T("mudou")), el("dd", {}, b.mudou),
+      el("dt", {}, T("decisao")), el("dd", {}, b.decisao),
+      el("dt", {}, T("opcoes")), el("dd", {}, el("ol", {}, b.opcoes.map(o => el("li", {}, o)))),
+      el("dt", {}, T("proximo")), el("dd", {}, b.proximo_passo),
+      el("dt", {}, T("rascunho")), el("dd", {}, el("div", { class: "draft" }, b.rascunho))));
+}
+
+function item(i) {
+  const d = el("details", { class: "item" });
+  if (open.has(i.id)) d.open = true;
+  d.addEventListener("toggle", () => d.open ? open.add(i.id) : open.delete(i.id));
+  const pills = [el("span", { class: "pill" }, i.status)];
+  if (i.social) pills.push(el("span", { class: "pill" }, T("social")));
+  if (i.mark?.who) pills.push(el("span", { class: "pill" }, T("waiting_on", { who: i.mark.who, until: i.mark.until })));
+  else if (i.mark?.until) pills.push(el("span", { class: "pill" }, T("later_until", { until: i.mark.until })));
+  d.append(el("summary", {},
+    el("div", { class: "row1" }, el("span", { class: "title" }, i.title), pills),
+    i.last ? el("div", { class: "snippet" }, `${fmt(i.last.at)} · ${i.last.text}`) : null));
+
+  const events = el("div", { class: "events" });
+  const waitForm = el("div", { class: "wait", hidden: "" },
+    el("input", { placeholder: T("who"), "aria-label": T("who") }),
+    el("input", { type: "date", value: plusWorkdays(3), "aria-label": T("until") }),
+    el("button", { class: "primary", onclick: () => {
+      const [who, until] = waitForm.querySelectorAll("input");
+      mark(i.id, "aguardando", { who: who.value, until: until.value });
+    } }, T("save")));
+  const copy = el("button", { onclick: async () => { await navigator.clipboard.writeText(i.brief.rascunho); copy.textContent = T("copied"); } }, T("copy"));
+  const resolved = ["feito", "ignorado"].includes(i.status) || i.mark;
+  d.append(el("div", { class: "body" },
+    briefBlock(i),
+    el("div", { class: "actions" },
+      i.brief ? copy : null,
+      i.wa ? el("a", { href: `whatsapp://send?phone=${i.wa}` }, T("whatsapp")) : null,
+      el("button", { onclick: async () => {
+        events.replaceChildren(...(await (await fetch("/api/events?id=" + encodeURIComponent(i.id))).json())
+          .map(e => el("div", { class: e.direction }, `${fmt(e.at)} · ${e.direction === "out" ? T("you") : T("them")}: ${e.text}`)));
+      } }, T("context"))),
+    events,
+    el("div", { class: "actions" },
+      el("button", { class: "primary", onclick: () => mark(i.id, "feito") }, T("feito")),
+      el("button", { onclick: () => { const t = new Date(); t.setDate(t.getDate() + 1); mark(i.id, "depois", { until: day(t) }); } }, T("amanha")),
+      el("button", { onclick: () => waitForm.toggleAttribute("hidden") }, T("aguardar")),
+      el("button", { onclick: () => mark(i.id, "ignorado") }, T("ignorar")),
+      resolved ? el("button", { onclick: () => mark(i.id, "aberto") }, T("desfazer")) : null),
+    waitForm));
+  return d;
+}
+
+async function load() {
+  const st = await (await fetch("/api/state")).json();
+  const root = document.getElementById("root");
+  root.replaceChildren(...SECTIONS.map(s => {
+    const items = st.items.filter(i => i.section === s);
+    const head = el("h2", {}, T(s), el("span", { class: "n" }, String(items.length)));
+    const list = items.length ? items.map(item) : [el("p", { class: "muted" }, T("empty"))];
+    if (s !== "resolvidos") return el("section", {}, head, list);
+    const fold = el("details", {}, el("summary", {}, head), list);   // keeps its open state across refreshes, like items
+    if (open.has("§" + s)) fold.open = true;
+    fold.addEventListener("toggle", () => fold.open ? open.add("§" + s) : open.delete("§" + s));
+    return fold;
+  }));
+}
+
+document.title = T("title");
+document.getElementById("h1").textContent = T("title");
+const rb = document.getElementById("refresh");
+rb.textContent = T("refresh");
+rb.addEventListener("click", load);
+load();
+setInterval(() => { if (!document.querySelector("details.item[open]")) load(); }, 60000);
+</script>
+</body>
+</html>
