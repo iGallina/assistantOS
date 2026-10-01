@@ -74,5 +74,20 @@ def test_v1_database_upgrades_with_its_data(tmp_path, monkeypatch):
     old.close()
     monkeypatch.undo()
     s = Store(tmp_path / "aos.db")
-    assert s.version() == SCHEMA_VERSION == 3
+    assert s.version() == SCHEMA_VERSION == 4
     assert [e.text for e in s.events("wa:1")] == ["antes"]
+
+
+def test_requests_and_drafts(tmp_path):
+    s = Store(tmp_path / "aos.db")
+    s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
+    r1 = s.add_request("wa:1", "responde que sim", "page")
+    r2 = s.add_request("wa:1", "e o prazo?", "page", parent=r1)
+    assert [r["id"] for r in s.open_requests()] == [r1, r2]
+    s.answer_request(r1, "answered", "Feito: novo rascunho.")
+    assert [r["id"] for r in s.open_requests()] == [r2]
+    assert s.request(r2)["parent"] == r1 and s.request(r1)["reply"] == "Feito: novo rascunho."
+    assert [r["id"] for r in s.requests("wa:1")] == [r2, r1]          # newest first
+    assert s.draft("wa:1") is None
+    s.set_draft("wa:1", "Oi Kat, sim!")
+    assert s.draft("wa:1") == "Oi Kat, sim!"
