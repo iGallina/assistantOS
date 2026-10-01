@@ -45,5 +45,10 @@
   "fizzy.waiting": "Waiting on {who} until {until}",
   "fizzy.overdue": "overdue",
   "fizzy.reopened": "Reopened: {mudou}",
-  "fizzy.reopened_generic": "open again (new message)."
+  "fizzy.reopened_generic": "open again (new message).",
+  "doctor.backend_ok": "model {kind}: {path}",
+  "doctor.backend_bad": "model {kind}: not found — install it and log in (see the README)",
+  "schedule.install": "pass scheduled every 5 minutes",
+  "schedule.remove": "schedule removed",
+  "schedule.none": "no pass scheduled"
 }

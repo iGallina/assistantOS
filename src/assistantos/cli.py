@@ -14,6 +14,7 @@ from .graph import run_pass
 from .i18n import t
 from .jev import Jev
 from .plugins import load_plugins
+from .platform import scheduler
 from .store import Store
 from .surfaces import load_surfaces
 
@@ -38,9 +39,14 @@ def cmd_init(h: Path) -> int:
 def cmd_doctor(h: Path) -> int:
     ok, lang = True, "pt-BR"
     try:
-        lang = load_config(h / "local" / "config").owner.language
+        cfg = load_config(h / "local" / "config")
+        lang = cfg.owner.language
         plugins = load_plugins(h / "local" / "config") + load_surfaces(h / "local" / "config")
         print("✓ " + t("doctor.config_ok", lang))
+        exe = shutil.which(cfg.backend.kind)
+        ok = ok and exe is not None
+        print(f"✓ {t('doctor.backend_ok', lang, kind=cfg.backend.kind, path=exe)}" if exe
+              else f"✗ {t('doctor.backend_bad', lang, kind=cfg.backend.kind)}")
     except ConfigError as e:
         ok, plugins = False, []
         print("✗ " + t("doctor.config_bad", lang))
@@ -104,6 +110,27 @@ def cmd_page(h: Path, port: int) -> int:
     return 0
 
 
+def cmd_schedule(h: Path, action: str) -> int:
+    sch = scheduler()
+    if action == "install":
+        problem = sch.install(h, shutil.which("uv") or "uv")
+    elif action == "remove":
+        problem = sch.remove()
+    else:
+        st = sch.status()
+        print(st or t("schedule.none"))
+        return 0 if st else 1
+    print(f"✗ {problem}" if problem else f"✓ {t('schedule.' + action)}")
+    return 1 if problem else 0
+
+
+def cmd_setup(h: Path) -> int:
+    """Idempotent: init (never overwrites), schedule the pass, then doctor says what is still missing."""
+    cmd_init(h)
+    rc = cmd_schedule(h, "install")
+    return cmd_doctor(h) or rc
+
+
 def main(argv: list[str] | None = None) -> int:
     for s in (sys.stdout, sys.stderr):
         if hasattr(s, "reconfigure"):
@@ -115,7 +142,13 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("doctor")
     sub.add_parser("run")
     sub.add_parser("page").add_argument("--port", type=int, default=8422)
+    sub.add_parser("setup")
+    sub.add_parser("schedule").add_argument("action", choices=["install", "remove", "status"])
     a = p.parse_args(argv)
+    h = home()
+    os.environ["PATH"] = str(h / "local" / "bin") + os.pathsep + os.environ.get("PATH", "")  # tools `aos setup` installed
+    if a.cmd == "schedule":
+        return cmd_schedule(h, a.action)
     if a.cmd == "page":
-        return cmd_page(home(), a.port)
-    return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run}[a.cmd](home())
+        return cmd_page(h, a.port)
+    return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "setup": cmd_setup}[a.cmd](h)
