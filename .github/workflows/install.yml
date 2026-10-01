@@ -1,0 +1,38 @@
+# The install, end to end, on clean runners: script → tools (hash-checked) → schedule → one real scheduled pass.
+name: install
+on:
+  workflow_dispatch:
+  push:
+    paths: ["install/**", "src/assistantos/platform/**", "src/assistantos/tools.py", ".github/workflows/install.yml"]
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install.ps1 (Windows PowerShell, as an owner would run it)
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File install\install.ps1
+      - name: the scheduled pass ran and succeeded
+        shell: powershell
+        run: |
+          $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
+          Start-Sleep -Seconds 90
+          $i = Get-ScheduledTaskInfo -TaskName assistantOS
+          "last run: $($i.LastRunTime)  result: $($i.LastTaskResult)"
+          Get-Content local\state\run.log -ErrorAction SilentlyContinue
+          if ($i.LastTaskResult -ne 0 -or $i.LastRunTime.Year -lt 2026) { exit 1 }
+          uv run aos schedule remove
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install.sh
+        run: sh install/install.sh
+      - name: the scheduled pass ran and succeeded
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          sleep 30
+          uv run aos schedule status
+          cat local/state/run.log || true
+          uv run aos schedule status | grep -q "last exit code = 0"
+          uv run aos schedule remove

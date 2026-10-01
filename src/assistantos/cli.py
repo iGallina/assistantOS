@@ -17,6 +17,7 @@ from .plugins import load_plugins
 from .platform import scheduler
 from .store import Store
 from .surfaces import load_surfaces
+from .tools import ToolError, install_tools
 
 
 def home() -> Path:
@@ -127,7 +128,14 @@ def cmd_schedule(h: Path, action: str) -> int:
 def cmd_setup(h: Path) -> int:
     """Idempotent: init (never overwrites), schedule the pass, then doctor says what is still missing."""
     cmd_init(h)
-    rc = cmd_schedule(h, "install")
+    rc = 0
+    try:
+        for line in install_tools(h / "local" / "bin"):
+            print("✓ " + line)
+    except ToolError as e:
+        print(f"✗ {e}")
+        rc = 1
+    rc = cmd_schedule(h, "install") or rc
     return cmd_doctor(h) or rc
 
 

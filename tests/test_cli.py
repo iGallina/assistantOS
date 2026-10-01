@@ -160,6 +160,7 @@ def test_setup_inits_schedules_and_checks(tmp_path, monkeypatch, capsys, fake_cl
     sched = _Sched()
     monkeypatch.setenv("AOS_HOME", str(tmp_path))
     monkeypatch.setattr(cli, "scheduler", lambda: sched)
+    monkeypatch.setattr(cli, "install_tools", lambda bin_dir: [f"wacli → {bin_dir}/wacli"])
     assert main(["setup"]) == 0
     assert (tmp_path / "local" / "config" / "owner.json").exists()
     assert sched.calls[0][0] == "install" and sched.calls[0][1] == tmp_path
