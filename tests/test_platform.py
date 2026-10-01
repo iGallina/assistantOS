@@ -10,7 +10,7 @@ def test_windows_script_runs_uv_directly_every_5_minutes():
     ps = windows.install_script(HOME, uv="C:\\Users\\Ana's PC\\.local\\bin\\uv.exe", minutes=5)
     assert "-Execute 'C:\\Users\\Ana''s PC\\.local\\bin\\uv.exe'" in ps          # single quotes escaped
     assert "-Argument 'run aos run'" in ps and f"-WorkingDirectory '{HOME}'" in ps
-    assert "(New-TimeSpan -Minutes 5)" in ps and "-MultipleInstances IgnoreNew" in ps
+    assert "-At (Get-Date).AddMinutes(1)" in ps and "(New-TimeSpan -Minutes 5)" in ps and "-MultipleInstances IgnoreNew" in ps
     assert "Register-ScheduledTask -TaskName 'assistantOS'" in ps and "-Force" in ps
     assert "ExecutionPolicy" not in ps                                             # no script, no policy change
     assert "Unregister-ScheduledTask -TaskName 'assistantOS' -Confirm:$false" in windows.remove_script()

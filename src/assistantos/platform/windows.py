@@ -1,5 +1,7 @@
 """Windows: the 5-minute pass as a Task Scheduler task that runs uv.exe directly — no PowerShell script runs on a
-schedule, so the machine's script policy is never involved. IgnoreNew = never two passes at once."""
+schedule, so the machine's script policy is never involved. IgnoreNew = never two passes at once.
+The first pass is 1 minute after install: a start time of "now" is already past when the task registers, which
+pushes the first run a whole interval out (CI 2026-10-01: never ran in 90 s, result 0x41303 SCHED_S_TASK_HAS_NOT_RUN)."""
 import subprocess
 from pathlib import Path
 
@@ -12,7 +14,7 @@ def _q(s) -> str:
 
 def install_script(home: Path, uv: str, minutes: int = 5) -> str:
     return (f"$a = New-ScheduledTaskAction -Execute {_q(uv)} -Argument 'run aos run' -WorkingDirectory {_q(home)}; "
-            f"$t = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes {minutes}); "
+            f"$t = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes {minutes}); "
             "$s = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable "
             "-ExecutionTimeLimit (New-TimeSpan -Minutes 30); "
             f"Register-ScheduledTask -TaskName {_q(TASK)} -Action $a -Trigger $t -Settings $s -Force | Out-Null")

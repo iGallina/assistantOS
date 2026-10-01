@@ -16,7 +16,7 @@ jobs:
         shell: powershell
         run: |
           $env:Path = "$env:USERPROFILE\.local\bin;$env:Path"
-          Start-Sleep -Seconds 90
+          Start-Sleep -Seconds 150   # first pass is scheduled 1 minute after install
           $i = Get-ScheduledTaskInfo -TaskName assistantOS
           "last run: $($i.LastRunTime)  result: $($i.LastTaskResult)"
           Get-Content local\state\run.log -ErrorAction SilentlyContinue
