@@ -109,3 +109,20 @@ def test_social_reopen_is_labelled_not_briefed(tmp_path):
         assert s.label("i0")[1] == p
         run(s, plugin, FakeBackend(), jev=jev)
         assert jev.calls == 1                                         # labelled once per new message
+
+
+class FakeSurface:
+    name = "fake-surface"
+
+    def __init__(self):
+        self.seen = []
+
+    def sync(self, store, cfg, today, lang):
+        self.seen.append([i.id for i in store.items() if store.brief(i.id)])
+        return ["#1 +x"]
+
+
+def test_surface_runs_after_briefs(tmp_path):
+    s, surf = Store(tmp_path / "aos.db"), FakeSurface()
+    r = run_pass(s, [(FakePlugin(1), None)], FakeBackend(), None, cfg(), TODAY, surfaces=[(surf, None)])
+    assert surf.seen == [["i0"]] and r["surfaced"] == ["#1 +x"]

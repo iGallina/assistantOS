@@ -41,5 +41,9 @@
   "page.later_until": "Volta em {until}",
   "page.you": "Você",
   "page.them": "Contato",
-  "page.error": "Não foi possível salvar: {error}"
+  "page.error": "Não foi possível salvar: {error}",
+  "fizzy.waiting": "Aguardando {who} até {until}",
+  "fizzy.overdue": "prazo vencido",
+  "fizzy.reopened": "Reaberto: {mudou}",
+  "fizzy.reopened_generic": "voltou a ficar em aberto (mensagem nova)."
 }

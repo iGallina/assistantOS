@@ -1,5 +1,5 @@
 """One pass of the loop as a LangGraph graph. Every node is plain code except `brief`: sweeps are code, the model
-drafts. collect → reconcile → classify (Jev label, never a filter) → select (caps) → brief."""
+drafts. collect → reconcile → classify (Jev label, never a filter) → select (caps) → brief → surface (Fizzy)."""
 from datetime import date, datetime
 from typing import TypedDict
 from zoneinfo import ZoneInfo
@@ -33,6 +33,7 @@ class PassState(TypedDict, total=False):
     to_brief: list[str]
     briefed: list[str]
     errors: list[str]
+    surfaced: list[str]
 
 
 def _prompt(store: Store, cfg: Config, item_id: str, st: Status) -> str:
@@ -45,7 +46,7 @@ def _prompt(store: Store, cfg: Config, item_id: str, st: Status) -> str:
                          history="\n".join(lines), previous=prev[0].model_dump_json() if prev else "nenhum")
 
 
-def run_pass(store: Store, plugins: list, backend, jev, cfg: Config, today: date) -> PassState:
+def run_pass(store: Store, plugins: list, backend, jev, cfg: Config, today: date, surfaces: list = ()) -> PassState:
     def collect(s: PassState) -> PassState:
         new = 0
         for plugin, pcfg in plugins:
@@ -103,12 +104,16 @@ def run_pass(store: Store, plugins: list, backend, jev, cfg: Config, today: date
             done.append(item_id)
         return {"briefed": done, "errors": errors}
 
+    def surface(s: PassState) -> PassState:
+        return {"surfaced": [line for sf, scfg in surfaces for line in sf.sync(store, scfg, today, cfg.owner.language)]}
+
     g = StateGraph(PassState)
-    for name, fn in (("collect", collect), ("reconcile", reconcile), ("classify", classify),
-                     ("select", select), ("brief", brief)):
+    steps = (("collect", collect), ("reconcile", reconcile), ("classify", classify), ("select", select),
+             ("brief", brief), ("surface", surface))
+    for name, fn in steps:
         g.add_node(name, fn)
     g.set_entry_point("collect")
-    for a, b in (("collect", "reconcile"), ("reconcile", "classify"), ("classify", "select"), ("select", "brief")):
+    for (a, _), (b, _) in zip(steps, steps[1:]):
         g.add_edge(a, b)
-    g.add_edge("brief", END)
+    g.add_edge("surface", END)
     return g.compile().invoke({})

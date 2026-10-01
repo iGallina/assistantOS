@@ -74,5 +74,5 @@ def test_v1_database_upgrades_with_its_data(tmp_path, monkeypatch):
     old.close()
     monkeypatch.undo()
     s = Store(tmp_path / "aos.db")
-    assert s.version() == SCHEMA_VERSION == 2
+    assert s.version() == SCHEMA_VERSION == 3
     assert [e.text for e in s.events("wa:1")] == ["antes"]

@@ -92,3 +92,11 @@ def test_doctor_reports_a_broken_plugin(tmp_path, monkeypatch, capsys):
         json.dumps({"store": str(tmp_path / "nope.db"), "chats": [JID]}), encoding="utf-8")
     assert main(["doctor"]) == 1
     assert "plugin whatsapp: wacli store" in capsys.readouterr().out
+
+
+def test_init_copies_fizzy_template_and_doctor_accepts_it_unset(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    main(["init"])
+    assert (tmp_path / "local" / "config" / "fizzy.json").exists()
+    assert main(["doctor"]) == 0
+    assert "plugin fizzy:" in capsys.readouterr().out

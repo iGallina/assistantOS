@@ -1,0 +1,6 @@
+{
+  "_about": "Quadro do Fizzy onde os itens abertos viram cartões. board: o ID do quadro (fizzy board list). Vazio = desligado. O token vem de FIZZY_TOKEN / FIZZY_ACCOUNT.",
+  "board": "",
+  "page_url": "http://127.0.0.1:8422",
+  "default_tag": "pessoal"
+}

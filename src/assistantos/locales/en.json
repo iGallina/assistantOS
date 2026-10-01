@@ -41,5 +41,9 @@
   "page.later_until": "Back on {until}",
   "page.you": "You",
   "page.them": "Contact",
-  "page.error": "Could not save: {error}"
+  "page.error": "Could not save: {error}",
+  "fizzy.waiting": "Waiting on {who} until {until}",
+  "fizzy.overdue": "overdue",
+  "fizzy.reopened": "Reopened: {mudou}",
+  "fizzy.reopened_generic": "open again (new message)."
 }

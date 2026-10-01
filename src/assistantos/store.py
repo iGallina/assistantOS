@@ -24,6 +24,10 @@ MIGRATIONS = [
     CREATE TABLE labels(item_id TEXT PRIMARY KEY REFERENCES items(id), event_at TEXT NOT NULL, p REAL);
     CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
     """,
+    """
+    CREATE TABLE cards(item_id TEXT PRIMARY KEY REFERENCES items(id), card INTEGER NOT NULL,
+                       closed INTEGER NOT NULL, hash TEXT NOT NULL, at TEXT NOT NULL);
+    """,
 ]
 SCHEMA_VERSION = len(MIGRATIONS)
 

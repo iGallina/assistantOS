@@ -15,6 +15,7 @@ from .i18n import t
 from .jev import Jev
 from .plugins import load_plugins
 from .store import Store
+from .surfaces import load_surfaces
 
 
 def home() -> Path:
@@ -38,7 +39,7 @@ def cmd_doctor(h: Path) -> int:
     ok, lang = True, "pt-BR"
     try:
         lang = load_config(h / "local" / "config").owner.language
-        plugins = load_plugins(h / "local" / "config")
+        plugins = load_plugins(h / "local" / "config") + load_surfaces(h / "local" / "config")
         print("✓ " + t("doctor.config_ok", lang))
     except ConfigError as e:
         ok, plugins = False, []
@@ -66,6 +67,7 @@ def cmd_run(h: Path) -> int:
         cfg = load_config(h / "local" / "config")
         lang = cfg.owner.language
         plugins = load_plugins(h / "local" / "config")
+        surfaces = load_surfaces(h / "local" / "config")
     except ConfigError as e:
         print("✗ " + t("doctor.config_bad", lang))
         for p in e.problems:
@@ -78,10 +80,10 @@ def cmd_run(h: Path) -> int:
         print("✗ " + t("run.backend_bad", lang, error=e))
         return 1
     today = datetime.now(ZoneInfo(cfg.owner.timezone)).date()
-    r = run_pass(store, plugins, backend, Jev(store, owner=cfg.owner.name), cfg, today)
+    r = run_pass(store, plugins, backend, Jev(store, owner=cfg.owner.name), cfg, today, surfaces)
     print(t("run.summary", lang, new=r["new_events"], briefed=len(r["briefed"]), errors=len(r["errors"])))
-    for e in r["errors"]:
-        print("    " + e)
+    for line in r["errors"] + r["surfaced"]:
+        print("    " + line)
     return 0
 
 
