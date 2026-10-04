@@ -26,4 +26,4 @@ A página: `uv run aos page` → http://127.0.0.1:8422
 
 ## Comandos
 
-`aos init` · `aos doctor` · `aos run` (uma passada) · `aos page` · `aos setup` · `aos schedule install|remove|status`
+`aos init` · `aos doctor` · `aos run` (uma passada; reescreve o relatório do dia em `local/reports/`) · `aos page` · `aos report` (abre o relatório do dia) · `aos setup` · `aos schedule install|remove|status`

@@ -14,6 +14,7 @@ from .graph import run_pass
 from .i18n import t
 from .jev import Jev
 from .plugins import load_plugins
+from .report import write_report
 from .platform import scheduler
 from .store import Store
 from .surfaces import load_surfaces
@@ -91,6 +92,23 @@ def cmd_run(h: Path) -> int:
     print(t("run.summary", lang, new=r["new_events"], briefed=len(r["briefed"]), requests=len(r["requests"]), errors=len(r["errors"])))
     for line in r["errors"] + r["surfaced"]:
         print("    " + line)
+    write_report(store, cfg, today, h / "local" / "reports")
+    return 0
+
+
+def cmd_report(h: Path) -> int:
+    import webbrowser
+    try:
+        cfg = load_config(h / "local" / "config")
+    except ConfigError as e:
+        print("✗ " + t("doctor.config_bad"))
+        for p in e.problems:
+            print("    " + p)
+        return 1
+    path = write_report(Store(h / "local" / "state" / "aos.db"), cfg, datetime.now(ZoneInfo(cfg.owner.timezone)).date(),
+                        h / "local" / "reports")
+    print(path)
+    webbrowser.open(path.as_uri())
     return 0
 
 
@@ -149,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("init")
     sub.add_parser("doctor")
     sub.add_parser("run")
+    sub.add_parser("report")
     sub.add_parser("page").add_argument("--port", type=int, default=8422)
     sub.add_parser("setup")
     sub.add_parser("schedule").add_argument("action", choices=["install", "remove", "status"])
@@ -159,4 +178,4 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_schedule(h, a.action)
     if a.cmd == "page":
         return cmd_page(h, a.port)
-    return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "setup": cmd_setup}[a.cmd](h)
+    return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "report": cmd_report, "setup": cmd_setup}[a.cmd](h)

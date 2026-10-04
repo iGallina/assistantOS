@@ -82,8 +82,9 @@ def test_caps(tmp_path):
     s = Store(tmp_path / "aos.db")
     assert len(run(s, FakePlugin(5), FakeBackend(), cfg(per_pass=2))["briefed"]) == 2
     s2 = Store(tmp_path / "b.db")
-    for _ in range(3):
-        s2.log_run("brief", "claude", "haiku", 1.0, True)
+    for at in (T0, T0, T0, T0 - timedelta(days=1)):                  # the cap counts the owner's day only
+        s2.db.execute("INSERT INTO runs(at, job, backend, model, seconds, ok) VALUES (?, 'brief', 'claude', 'haiku', 1, 1)",
+                      (at.isoformat(),))
     assert len(run(s2, FakePlugin(5), FakeBackend(), cfg(per_day=4))["briefed"]) == 1
 
 

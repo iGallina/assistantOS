@@ -1,7 +1,8 @@
 """SQLite state. Schema changes are appended to MIGRATIONS; PRAGMA user_version tracks what ran."""
 import sqlite3
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .models import Brief, Event, Item, Mark
 
@@ -41,6 +42,12 @@ REQUEST = ("id", "item_id", "at", "ask", "via", "parent", "state", "reply", "tri
 
 def utc(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
+
+
+def local_day(day: date, tz: str) -> tuple[datetime, datetime]:
+    """The owner's calendar day as a UTC [start, end) range — caps and the report count the same day."""
+    start = datetime.combine(day, time(), ZoneInfo(tz))
+    return start.astimezone(timezone.utc), (start + timedelta(days=1)).astimezone(timezone.utc)
 
 
 class Store:
@@ -132,9 +139,12 @@ class Store:
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO meta VALUES (?,?)", (key, value))
 
-    def runs_today(self, job: str) -> int:
-        today = datetime.now(timezone.utc).date().isoformat()
-        return self.db.execute("SELECT count(*) FROM runs WHERE job=? AND at LIKE ?", (job, today + "%")).fetchone()[0]
+    def runs_between(self, start: datetime, end: datetime, job: str | None = None) -> list[tuple]:
+        """(job, backend, model, seconds, ok) rows in [start, end). Stored as UTC ISO text, so text order is time order."""
+        q, args = "SELECT job, backend, model, seconds, ok FROM runs WHERE at >= ? AND at < ?", (utc(start), utc(end))
+        if job:
+            q, args = q + " AND job=?", (*args, job)
+        return self.db.execute(q + " ORDER BY id", args).fetchall()
 
     def add_request(self, item_id: str, ask: str, via: str, parent: int | None = None) -> int:
         with self.db:

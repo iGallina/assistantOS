@@ -83,6 +83,12 @@ def test_run_one_pass(tmp_path, monkeypatch, capsys):
     capsys.readouterr()
     assert main(["run"]) == 0
     assert capsys.readouterr().out.strip() == t("run.summary", new=1, briefed=1, requests=0, errors=0)
+    reports = list((tmp_path / "local" / "reports").glob("*.html"))
+    assert len(reports) == 1 and "Kat" in reports[0].read_text(encoding="utf-8")
+    opened = []
+    monkeypatch.setattr("webbrowser.open", opened.append)
+    assert main(["report"]) == 0
+    assert capsys.readouterr().out.strip() == str(reports[0]) and opened == [reports[0].as_uri()]
 
 
 def test_doctor_reports_a_broken_plugin(tmp_path, monkeypatch, capsys):

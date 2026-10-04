@@ -55,5 +55,20 @@
   "page.ask_hint": "E.g.: reply that I deliver on Friday",
   "page.ask_send": "Ask",
   "page.ask_queued": "Queued: the next pass answers (within 5 min).",
-  "page.new_draft": "New draft"
+  "page.new_draft": "New draft",
+  "report.title": "Daily report {day}",
+  "report.decide": "Decide now",
+  "report.requests": "Pending requests",
+  "report.came_in": "Came in today",
+  "report.prompts": "Suggested next prompts",
+  "report.empty": "Nothing here.",
+  "report.spend": "Background AI today",
+  "report.cap": "Briefs: {used} of {cap} per day.",
+  "report.job": "Job",
+  "report.backend": "Model",
+  "report.calls": "Calls",
+  "report.failed": "Failed",
+  "report.seconds": "Seconds",
+  "report.prompt_session": "About \"{title}\": {owner} asked \"{ask}\". The assistant, without tools, replied: {reply}\nDo this in a session with tools. Send nothing to anyone without {owner}'s confirmation.",
+  "report.prompt_step": "Prepare the next step for \"{title}\": {step}"
 }

@@ -11,3 +11,4 @@ local/config/*.json
 local/state/
 .venv/
 .pytest_cache/
+local/reports/

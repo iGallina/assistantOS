@@ -55,5 +55,20 @@
   "page.ask_hint": "Ex.: responde que entrego sexta",
   "page.ask_send": "Pedir",
   "page.ask_queued": "Na fila: a próxima passada responde (até 5 min).",
-  "page.new_draft": "Rascunho novo"
+  "page.new_draft": "Rascunho novo",
+  "report.title": "Relatório do dia {day}",
+  "report.decide": "Decidir agora",
+  "report.requests": "Pedidos pendentes",
+  "report.came_in": "Chegou hoje",
+  "report.prompts": "Próximos prompts sugeridos",
+  "report.empty": "Nada aqui.",
+  "report.spend": "IA em segundo plano hoje",
+  "report.cap": "Briefs: {used} de {cap} por dia.",
+  "report.job": "Tarefa",
+  "report.backend": "Modelo",
+  "report.calls": "Chamadas",
+  "report.failed": "Falhas",
+  "report.seconds": "Segundos",
+  "report.prompt_session": "Sobre \"{title}\": {owner} pediu \"{ask}\". O assistente sem ferramentas respondeu: {reply}\nFaça isso numa sessão com ferramentas. Não envie nada a ninguém sem a confirmação de {owner}.",
+  "report.prompt_step": "Prepara o próximo passo para \"{title}\": {step}"
 }

@@ -11,7 +11,7 @@ from .backends import BackendError, QuotaExceeded
 from .jev import route, social
 from .models import Brief, Config, RequestPlan, Status
 from .reconcile import statuses
-from .store import Store
+from .store import Store, local_day
 
 OPEN = (Status.REABERTO, Status.VENCIDO, Status.ABERTO)  # also the brief order: reopened first
 HISTORY = 15
@@ -121,7 +121,8 @@ def run_pass(store: Store, plugins: list, backend, jev, cfg: Config, today: date
         return {}
 
     def select(s: PassState) -> PassState:
-        room = min(cfg.backend.per_pass_cap, cfg.backend.per_day_cap - store.runs_today("brief"))
+        used = len(store.runs_between(*local_day(today, cfg.owner.timezone), "brief"))
+        room = min(cfg.backend.per_pass_cap, cfg.backend.per_day_cap - used)
         due = []
         for item_id, st in s["statuses"].items():
             last, last_in, prev, lab = (store.last_event(item_id), store.last_event(item_id, "in"),
