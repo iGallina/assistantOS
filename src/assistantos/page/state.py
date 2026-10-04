@@ -30,6 +30,8 @@ def build_state(store: Store, today: date) -> dict:
             "social": bool(lab and last_in and lab[0] == last_in.at and social(lab[1])),
             "mark": {"who": mark.who, "until": mark.until and mark.until.isoformat()} if mark else None,
             "wa": jid.split("@")[0] if jid.endswith("@s.whatsapp.net") else None,
+            "draft": store.draft(item.id),
+            "requests": [{k: r[k] for k in ("id", "at", "ask", "state", "reply")} for r in store.requests(item.id)],
         })
     newest = lambda i: -datetime.fromisoformat(i["last"]["at"]).timestamp() if i["last"] else 0  # noqa: E731
     items.sort(key=lambda i: (SECTIONS.index(i["section"]), newest(i)))

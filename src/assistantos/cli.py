@@ -88,7 +88,7 @@ def cmd_run(h: Path) -> int:
         return 1
     today = datetime.now(ZoneInfo(cfg.owner.timezone)).date()
     r = run_pass(store, plugins, backend, Jev(store, owner=cfg.owner.name), cfg, today, surfaces)
-    print(t("run.summary", lang, new=r["new_events"], briefed=len(r["briefed"]), errors=len(r["errors"])))
+    print(t("run.summary", lang, new=r["new_events"], briefed=len(r["briefed"]), requests=len(r["requests"]), errors=len(r["errors"])))
     for line in r["errors"] + r["surfaced"]:
         print("    " + line)
     return 0

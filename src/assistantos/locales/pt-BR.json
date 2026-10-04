@@ -5,7 +5,7 @@
   "doctor.config_bad": "configuração com problemas:",
   "doctor.store_ok": "banco local pronto (versão {version})",
   "doctor.store_bad": "banco local com erro: {error}",
-  "run.summary": "Passada: {new} mensagens novas, {briefed} briefs, {errors} erros.",
+  "run.summary": "Passada: {new} mensagens novas, {briefed} briefs, {requests} pedidos, {errors} erros.",
   "doctor.plugin_ok": "plugin {name}: {detail}",
   "doctor.plugin_bad": "plugin {name}: {problem}",
   "run.backend_bad": "modelo indisponível: {error}",
@@ -50,5 +50,10 @@
   "doctor.backend_bad": "modelo {kind}: não encontrado — instale e faça login (veja o README)",
   "schedule.install": "passada agendada a cada 5 minutos",
   "schedule.remove": "agendamento removido",
-  "schedule.none": "nenhuma passada agendada"
+  "schedule.none": "nenhuma passada agendada",
+  "page.ask": "Pedir ao assistente",
+  "page.ask_hint": "Ex.: responde que entrego sexta",
+  "page.ask_send": "Pedir",
+  "page.ask_queued": "Na fila: a próxima passada responde (até 5 min).",
+  "page.new_draft": "Rascunho novo"
 }

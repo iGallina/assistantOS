@@ -82,7 +82,7 @@ def test_run_one_pass(tmp_path, monkeypatch, capsys):
         json.dumps({"store": str(tmp_path / "wacli.db"), "chats": [JID]}), encoding="utf-8")
     capsys.readouterr()
     assert main(["run"]) == 0
-    assert capsys.readouterr().out.strip() == t("run.summary", new=1, briefed=1, errors=0)
+    assert capsys.readouterr().out.strip() == t("run.summary", new=1, briefed=1, requests=0, errors=0)
 
 
 def test_doctor_reports_a_broken_plugin(tmp_path, monkeypatch, capsys):

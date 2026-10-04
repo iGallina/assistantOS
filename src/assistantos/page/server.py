@@ -1,4 +1,4 @@
-"""The local page: stdlib HTTP on 127.0.0.1, one SQLite connection per request. Marks only — nothing is sent."""
+"""The local page: stdlib HTTP on 127.0.0.1, one SQLite connection per request. Marks and requests — nothing is sent."""
 import json
 from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -49,13 +49,20 @@ class Handler(BaseHTTPRequestHandler):
             store.close()
 
     def do_POST(self):
-        if urlparse(self.path).path != "/api/mark":
+        path = urlparse(self.path).path
+        if path not in ("/api/mark", "/api/ask"):
             return self._send(404, {"error": "not found"})
         store = Store(self.server.db_path)
         try:
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             if not store.item(str(body.get("item_id"))):
                 return self._send(404, {"error": "unknown item"})
+            if path == "/api/ask":  # queued; the next pass answers it. A new ask follows up the item's last one
+                ask = str(body.get("ask") or "").strip()
+                if not ask:
+                    return self._send(400, {"error": "empty request"})
+                last = store.requests(body["item_id"])
+                return self._send(200, {"id": store.add_request(body["item_id"], ask, "page", last[0]["id"] if last else None)})
             store.set_mark(Mark(item_id=body["item_id"], status=body.get("status"), at=datetime.now(timezone.utc),
                                 who=body.get("who") or None, until=body.get("until") or None))
             self._send(200, {"ok": True})

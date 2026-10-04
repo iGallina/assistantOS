@@ -5,7 +5,7 @@
   "doctor.config_bad": "config has problems:",
   "doctor.store_ok": "local database ready (version {version})",
   "doctor.store_bad": "local database error: {error}",
-  "run.summary": "Pass: {new} new messages, {briefed} briefs, {errors} errors.",
+  "run.summary": "Pass: {new} new messages, {briefed} briefs, {requests} requests, {errors} errors.",
   "doctor.plugin_ok": "plugin {name}: {detail}",
   "doctor.plugin_bad": "plugin {name}: {problem}",
   "run.backend_bad": "model unavailable: {error}",
@@ -50,5 +50,10 @@
   "doctor.backend_bad": "model {kind}: not found — install it and log in (see the README)",
   "schedule.install": "pass scheduled every 5 minutes",
   "schedule.remove": "schedule removed",
-  "schedule.none": "no pass scheduled"
+  "schedule.none": "no pass scheduled",
+  "page.ask": "Ask the assistant",
+  "page.ask_hint": "E.g.: reply that I deliver on Friday",
+  "page.ask_send": "Ask",
+  "page.ask_queued": "Queued: the next pass answers (within 5 min).",
+  "page.new_draft": "New draft"
 }

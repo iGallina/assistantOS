@@ -139,6 +139,8 @@ class PlanBackend(FakeBackend):
     def ask(self, prompt, output, job):
         if output is RequestPlan:
             self.prompts.append(prompt)
+            if err := self.fail.get(len(self.prompts)):
+                raise err
             return self.plan
         return super().ask(prompt, output, job)
 
@@ -188,3 +190,22 @@ def test_failed_request_stays_open(tmp_path):
     rid = s.add_request("i0", "resume", "page")
     r = run(s, plugin, b)
     assert s.request(rid)["state"] == "open" and r["errors"]
+
+
+def test_request_failing_twice_goes_to_a_session(tmp_path):
+    b = PlanBackend(RequestPlan(action="reply", text="x"), fail={1: BackendError("bad json"), 2: BackendError("bad json")})
+    s, plugin = Store(tmp_path / "aos.db"), FakePlugin(1)
+    run(s, plugin, FakeBackend())
+    rid = s.add_request("i0", "resume", "page")
+    run(s, plugin, b)
+    run(s, plugin, b)
+    assert s.request(rid)["state"] == "needs_session" and "bad json" in s.request(rid)["reply"]
+    assert len(b.prompts) == 2
+
+
+def test_follow_up_carries_the_earlier_exchange(tmp_path):
+    b = PlanBackend(RequestPlan(action="reply", text="Ela pediu orçamento."))
+    s, rid, _ = ask_on_fresh_item(tmp_path, b)
+    s.add_request("i0", "e o valor?", "page", parent=rid)
+    run(s, FakePlugin(1), b)
+    assert "entrego sexta" in b.prompts[-1] and "Ela pediu orçamento." in b.prompts[-1] and "e o valor?" in b.prompts[-1]
