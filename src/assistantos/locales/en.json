@@ -70,5 +70,7 @@
   "report.failed": "Failed",
   "report.seconds": "Seconds",
   "report.prompt_session": "About \"{title}\": {owner} asked \"{ask}\". The assistant, without tools, replied: {reply}\nDo this in a session with tools. Send nothing to anyone without {owner}'s confirmation.",
-  "report.prompt_step": "Prepare the next step for \"{title}\": {step}"
+  "report.prompt_step": "Prepare the next step for \"{title}\": {step}",
+  "bug.saved": "Report saved (already masked): {path}",
+  "bug.confirm": "Open it on GitHub for you to review and submit? Nothing leaves until you click Submit there. [y/N] "
 }

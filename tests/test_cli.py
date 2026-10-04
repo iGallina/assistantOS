@@ -45,6 +45,7 @@ import sqlite3
 import time
 
 from assistantos import cli
+from assistantos.backends import BackendError
 from assistantos.models import Brief
 
 JID = "5561000000001@s.whatsapp.net"
@@ -172,3 +173,47 @@ def test_setup_inits_schedules_and_checks(tmp_path, monkeypatch, capsys, fake_cl
     assert sched.calls[0][0] == "install" and sched.calls[0][1] == tmp_path
     assert main(["schedule", "status"]) == 0 and "Ready" in capsys.readouterr().out
     assert main(["schedule", "remove"]) == 0 and sched.calls[-1] == ("remove",)
+
+
+def test_run_errors_land_in_errors_log(tmp_path, monkeypatch):
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+
+    class Down:
+        def ask(self, prompt, output, job):
+            raise BackendError("claude: down")
+    monkeypatch.setattr(cli, "make_backend", lambda cfg, store: Down())
+    main(["init"])
+    _wacli(tmp_path / "wacli.db")
+    (tmp_path / "local" / "config" / "whatsapp.json").write_text(
+        json.dumps({"store": str(tmp_path / "wacli.db"), "chats": [JID]}), encoding="utf-8")
+    assert main(["run"]) == 0
+    assert "claude: down" in (tmp_path / "local" / "state" / "errors.log").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("answer,opens", [("s", True), ("n", False), (EOFError, False)])
+def test_bug_report_asks_before_opening(tmp_path, monkeypatch, capsys, answer, opens):
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    main(["init"])
+    (tmp_path / "local" / "state").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "local" / "state" / "errors.log").write_text("2026-10-03 run: wa:5561999998888@s.whatsapp.net: x\n",
+                                                            encoding="utf-8")
+
+    def reply(prompt=""):
+        if answer is EOFError:
+            raise EOFError
+        return answer
+    monkeypatch.setattr("builtins.input", reply)
+    opened = []
+    monkeypatch.setattr("webbrowser.open", opened.append)
+    owner = tmp_path / "local" / "config" / "owner.json"
+    owner.write_text(owner.read_text(encoding="utf-8").replace("SEU NOME", "Ana Lima"), encoding="utf-8")
+    assert main(["bug-report", "a página não abre pra Ana Lima"]) == 0
+    out = capsys.readouterr().out
+    saved = list((tmp_path / "local" / "reports").glob("bug-*.md"))
+    assert len(saved) == 1 and "5561999998888" not in saved[0].read_text(encoding="utf-8") + out
+    assert "a página não abre" in out and "[whatsapp]" in out
+    assert (len(opened) == 1) == opens
+    if opens:
+        assert "5561999998888" not in opened[0] and "Ana" not in opened[0] and "issues/new" in opened[0]
+        assert "title=bug%3A+a+p%C3%A1gina+n%C3%A3o+abre+pra+%5Bcontato%5D" in opened[0]

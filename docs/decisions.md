@@ -113,3 +113,7 @@ Question (Ian): do we need LangChain and LangGraph, given agents must carry the 
 - **Any technology:** a graph node calls a backend (Claude, Codex, Gemini, a future API) or a plugin through our own interfaces, so new tech is a new backend/plugin, not a graph change. Heavy tool work stays in the CLIs' own agent modes, run as nodes.
 
 **Adopted by Ian 2026-09-29 (option A).** Spec updated accordingly.
+
+## 2026-10-03 — Lessons from the build
+
+- **Measure the anonymizer on real data** (2026-10-03). The labelled patterns (phones, CPF/CNPJ, cards, keys, e-mails, WhatsApp ids) passed every unit test and still let 1,053 runs of 8+ digits through on a real 47k-message store: unformatted CPFs, CEPs, phones without area code, order numbers, ids glued to letters. Fix: protect real dates/times, then mask any remaining 8+ digit run → 0 left, dates kept. Re-run the measurement whenever a pattern changes.

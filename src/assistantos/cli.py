@@ -3,12 +3,16 @@ import os
 import shutil
 import sqlite3
 import sys
+import traceback
+from contextlib import redirect_stdout
 from datetime import datetime
+from io import StringIO
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from . import __version__
 from .backends import BackendError, make_backend
+from .bugreport import build_report, issue_url
 from .config import EXAMPLES, ConfigError, load_config
 from .graph import run_pass
 from .i18n import t
@@ -23,6 +27,14 @@ from .tools import ToolError, install_tools
 
 def home() -> Path:
     return Path(os.environ.get("AOS_HOME") or Path.cwd())
+
+
+def log_error(h: Path, text: str) -> None:
+    """local/state/errors.log: what `aos bug-report` attaches. The scheduled pass on Windows has no other log."""
+    p = h / "local" / "state" / "errors.log"  # ponytail: never rotated; rotate when a real install shows it growing
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with p.open("a", encoding="utf-8") as f:
+        f.write(f"{datetime.now():%Y-%m-%d %H:%M:%S} {text.rstrip()}\n")
 
 
 def cmd_init(h: Path) -> int:
@@ -92,6 +104,8 @@ def cmd_run(h: Path) -> int:
     print(t("run.summary", lang, new=r["new_events"], briefed=len(r["briefed"]), requests=len(r["requests"]), errors=len(r["errors"])))
     for line in r["errors"] + r["surfaced"]:
         print("    " + line)
+    for e in r["errors"]:
+        log_error(h, "run: " + e)
     write_report(store, cfg, today, h / "local" / "reports")
     return 0
 
@@ -109,6 +123,31 @@ def cmd_report(h: Path) -> int:
                         h / "local" / "reports")
     print(path)
     webbrowser.open(path.as_uri())
+    return 0
+
+
+def cmd_bug_report(h: Path, description: str) -> int:
+    import webbrowser
+    lang = "pt-BR"
+    try:
+        lang = load_config(h / "local" / "config").owner.language
+    except ConfigError:
+        pass
+    doctor = StringIO()
+    with redirect_stdout(doctor):
+        cmd_doctor(h)
+    title, body = build_report(h, description, doctor.getvalue())
+    path = h / "local" / "reports" / f"bug-{datetime.now():%Y%m%d-%H%M%S}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+    print(body)
+    print(t("bug.saved", lang, path=path))
+    try:
+        yes = input(t("bug.confirm", lang)).strip().lower() in ("s", "sim", "y", "yes")
+    except EOFError:  # not interactive: never opens anything
+        yes = False
+    if yes:
+        webbrowser.open(issue_url(title, body))
     return 0
 
 
@@ -168,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("doctor")
     sub.add_parser("run")
     sub.add_parser("report")
+    sub.add_parser("bug-report").add_argument("description")
     sub.add_parser("page").add_argument("--port", type=int, default=8422)
     sub.add_parser("setup")
     sub.add_parser("schedule").add_argument("action", choices=["install", "remove", "status"])
@@ -176,6 +216,12 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["PATH"] = str(h / "local" / "bin") + os.pathsep + os.environ.get("PATH", "")  # tools `aos setup` installed
     if a.cmd == "schedule":
         return cmd_schedule(h, a.action)
-    if a.cmd == "page":
-        return cmd_page(h, a.port)
-    return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "report": cmd_report, "setup": cmd_setup}[a.cmd](h)
+    try:
+        if a.cmd == "page":
+            return cmd_page(h, a.port)
+        if a.cmd == "bug-report":
+            return cmd_bug_report(h, a.description)
+        return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "report": cmd_report, "setup": cmd_setup}[a.cmd](h)
+    except Exception:
+        log_error(h, f"aos {a.cmd} crashed:\n" + traceback.format_exc())
+        raise
