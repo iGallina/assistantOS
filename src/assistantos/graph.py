@@ -92,8 +92,10 @@ def _request_prompt(store: Store, cfg: Config, r: dict, today: date) -> str:
 
 def run_pass(store: Store, plugins: list, backend, jev, cfg: Config, today: date, surfaces: list = ()) -> PassState:
     def collect(s: PassState) -> PassState:
-        new = 0
+        new, errors = 0, []
         for plugin, pcfg in plugins:
+            if hasattr(plugin, "refresh") and (problem := plugin.refresh(pcfg)):
+                errors.append(f"{plugin.name}: {problem}")
             key = f"cursor:{plugin.name}"
             since = store.get_meta(key)
             items, events = plugin.poll(pcfg, datetime.fromisoformat(since) if since else None)
@@ -102,7 +104,7 @@ def run_pass(store: Store, plugins: list, backend, jev, cfg: Config, today: date
             new += sum(store.add_event(e) for e in events)
             if events:
                 store.set_meta(key, max(e.at for e in events).isoformat())
-        return {"new_events": new}
+        return {"new_events": new, "errors": errors}
 
     def reconcile(s: PassState) -> PassState:
         return {"statuses": statuses(store, today)}
@@ -135,7 +137,7 @@ def run_pass(store: Store, plugins: list, backend, jev, cfg: Config, today: date
         return {"to_brief": [i for *_, i in sorted(due)][:max(room, 0)]}
 
     def brief(s: PassState) -> PassState:
-        done, errors = [], []
+        done, errors = [], list(s["errors"])
         for item_id in s["to_brief"]:
             try:
                 b = backend.ask(_prompt(store, cfg, item_id, s["statuses"][item_id]), Brief, "brief")

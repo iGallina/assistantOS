@@ -77,6 +77,7 @@ def test_run_one_pass(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("AOS_HOME", str(tmp_path))
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     monkeypatch.setattr(cli, "make_backend", lambda cfg, store: _Backend())
+    monkeypatch.setattr("assistantos.plugins.whatsapp.WhatsApp.refresh", lambda self, cfg: None)  # fake store: no sync
     main(["init"])
     _wacli(tmp_path / "wacli.db")
     (tmp_path / "local" / "config" / "whatsapp.json").write_text(
@@ -183,6 +184,7 @@ def test_run_errors_land_in_errors_log(tmp_path, monkeypatch):
         def ask(self, prompt, output, job):
             raise BackendError("claude: down")
     monkeypatch.setattr(cli, "make_backend", lambda cfg, store: Down())
+    monkeypatch.setattr("assistantos.plugins.whatsapp.WhatsApp.refresh", lambda self, cfg: None)
     main(["init"])
     _wacli(tmp_path / "wacli.db")
     (tmp_path / "local" / "config" / "whatsapp.json").write_text(
