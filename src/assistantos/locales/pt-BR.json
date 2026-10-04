@@ -72,5 +72,7 @@
   "report.prompt_session": "Sobre \"{title}\": {owner} pediu \"{ask}\". O assistente sem ferramentas respondeu: {reply}\nFaça isso numa sessão com ferramentas. Não envie nada a ninguém sem a confirmação de {owner}.",
   "report.prompt_step": "Prepara o próximo passo para \"{title}\": {step}",
   "bug.saved": "Relatório salvo (já mascarado): {path}",
-  "bug.confirm": "Abrir no GitHub para você revisar e enviar? Nada sai sem você clicar em Enviar lá. [s/N] "
+  "bug.confirm": "Abrir no GitHub para você revisar e enviar? Nada sai sem você clicar em Enviar lá. [s/N] ",
+  "export.done": "Cópia salva: {path}",
+  "uninstall.kept": "Seus arquivos continuam em {local} — apague a pasta quando quiser (a cópia acima tem tudo)."
 }

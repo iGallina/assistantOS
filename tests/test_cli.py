@@ -219,3 +219,39 @@ def test_bug_report_asks_before_opening(tmp_path, monkeypatch, capsys, answer, o
     if opens:
         assert "5561999998888" not in opened[0] and "Ana" not in opened[0] and "issues/new" in opened[0]
         assert "title=bug%3A+a+p%C3%A1gina+n%C3%A3o+abre+pra+%5Bcontato%5D" in opened[0]
+
+
+def _installed(tmp_path, monkeypatch):
+    import zipfile  # noqa: F401
+    from assistantos.models import Item
+    from assistantos.store import Store
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    main(["init"])
+    s = Store(tmp_path / "local" / "state" / "aos.db")
+    s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
+    s.close()
+    (tmp_path / "local" / "bin").mkdir()
+    (tmp_path / "local" / "bin" / "wacli").write_bytes(b"binary")
+
+
+def test_export_zips_config_and_a_consistent_store(tmp_path, monkeypatch, capsys):
+    import sqlite3
+    import zipfile
+    _installed(tmp_path, monkeypatch)
+    assert main(["export"]) == 0
+    path = tmp_path / capsys.readouterr().out.strip().splitlines()[-1].split(": ", 1)[1]
+    names = zipfile.ZipFile(path).namelist()
+    assert "local/config/owner.json" in names and "local/state/aos.db" in names
+    assert not any(n.startswith("local/bin") for n in names)
+    zipfile.ZipFile(path).extract("local/state/aos.db", tmp_path / "x")
+    assert sqlite3.connect(tmp_path / "x" / "local" / "state" / "aos.db").execute("select title from items").fetchone() == ("Kat",)
+
+
+def test_uninstall_exports_then_removes_the_schedule_and_keeps_files(tmp_path, monkeypatch, capsys):
+    sched = _Sched()
+    _installed(tmp_path, monkeypatch)
+    monkeypatch.setattr(cli, "scheduler", lambda: sched)
+    assert main(["uninstall"]) == 0
+    assert sched.calls == [("remove",)] and list(tmp_path.glob("assistantos-export-*.zip"))
+    assert (tmp_path / "local" / "state" / "aos.db").exists()
+    assert str(tmp_path / "local") in capsys.readouterr().out
