@@ -163,6 +163,13 @@ def cmd_uninstall(h: Path) -> int:
     return 1 if problem else 0
 
 
+def cmd_update(h: Path) -> int:
+    from .update import update
+    rc, msg = update(h)
+    print(("✓ " if rc == 0 else "✗ ") + msg)
+    return rc
+
+
 def cmd_bug_report(h: Path, description: str) -> int:
     import webbrowser
     lang = "pt-BR"
@@ -245,6 +252,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("run")
     sub.add_parser("report")
     sub.add_parser("export")
+    sub.add_parser("update")
     sub.add_parser("uninstall")
     sub.add_parser("bug-report").add_argument("description")
     sub.add_parser("page").add_argument("--port", type=int, default=8422)
@@ -261,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
         if a.cmd == "bug-report":
             return cmd_bug_report(h, a.description)
         return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "report": cmd_report, "setup": cmd_setup,
-                "export": cmd_export, "uninstall": cmd_uninstall}[a.cmd](h)
+                "export": cmd_export, "update": cmd_update, "uninstall": cmd_uninstall}[a.cmd](h)
     except Exception:
         log_error(h, f"aos {a.cmd} crashed:\n" + traceback.format_exc())
         raise

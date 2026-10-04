@@ -255,3 +255,9 @@ def test_uninstall_exports_then_removes_the_schedule_and_keeps_files(tmp_path, m
     assert sched.calls == [("remove",)] and list(tmp_path.glob("assistantos-export-*.zip"))
     assert (tmp_path / "local" / "state" / "aos.db").exists()
     assert str(tmp_path / "local") in capsys.readouterr().out
+
+
+def test_update_prints_the_outcome(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    monkeypatch.setattr("assistantos.update.update", lambda h: (1, "sem o remoto 'upstream'"))
+    assert main(["update"]) == 1 and capsys.readouterr().out.strip() == "✗ sem o remoto 'upstream'"
