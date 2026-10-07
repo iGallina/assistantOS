@@ -39,8 +39,10 @@ details.item > summary::-webkit-details-marker { display: none; }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .muted { color: var(--muted); }
 .wait { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.wait input { font: inherit; padding: 8px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line);
+.wait input, .ask textarea { font: inherit; padding: 8px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line);
               background: var(--card); color: var(--fg); }
+.ask { display: grid; gap: 8px; }
+.req { border-left: 3px solid var(--line); padding-left: 8px; }
 .events { display: grid; gap: 4px; font-size: .95rem; }
 .events .out { color: var(--muted); }
 a { color: var(--accent); }
@@ -110,6 +112,24 @@ function item(i) {
     } }, T("save")));
   const copy = el("button", { onclick: async () => { await navigator.clipboard.writeText(i.brief.rascunho); copy.textContent = T("copied"); } }, T("copy"));
   const resolved = ["feito", "ignorado"].includes(i.status) || i.mark;
+  const askBox = el("textarea", { rows: "2", placeholder: T("ask_hint"), "aria-label": T("ask") });
+  const askBtn = el("button", { onclick: async () => {
+    if (!askBox.value.trim()) return;
+    askBtn.disabled = true;
+    const r = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ item_id: i.id, ask: askBox.value }) });
+    if (!r.ok) alert(T("error", { error: (await r.json()).error }));
+    load();
+  } }, T("ask_send"));
+  const copyDraft = el("button", { onclick: async () => { await navigator.clipboard.writeText(i.draft); copyDraft.textContent = T("copied"); } }, T("copy"));
+  const asks = el("div", { class: "ask" },
+    el("strong", {}, T("ask")),
+    i.draft ? el("div", {}, el("p", { class: "muted" }, T("new_draft")), el("div", { class: "draft" }, i.draft), copyDraft) : null,
+    [...i.requests].reverse().map(r => el("div", { class: "req" },
+      el("div", {}, `${fmt(r.at)} · ${r.ask}`),
+      r.state === "open" ? el("div", { class: "muted" }, T("ask_queued"))
+        : el("div", { class: "draft" }, r.reply))),
+    askBox, el("div", { class: "actions" }, askBtn));
   d.append(el("div", { class: "body" },
     briefBlock(i),
     el("div", { class: "actions" },
@@ -120,6 +140,7 @@ function item(i) {
           .map(e => el("div", { class: e.direction }, `${fmt(e.at)} · ${e.direction === "out" ? T("you") : T("them")}: ${e.text}`)));
       } }, T("context"))),
     events,
+    asks,
     el("div", { class: "actions" },
       el("button", { class: "primary", onclick: () => mark(i.id, "feito") }, T("feito")),
       el("button", { onclick: () => { const t = new Date(); t.setDate(t.getDate() + 1); mark(i.id, "depois", { until: day(t) }); } }, T("amanha")),

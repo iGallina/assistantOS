@@ -1,7 +1,8 @@
 """SQLite state. Schema changes are appended to MIGRATIONS; PRAGMA user_version tracks what ran."""
 import sqlite3
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from .models import Brief, Event, Item, Mark
 
@@ -28,12 +29,25 @@ MIGRATIONS = [
     CREATE TABLE cards(item_id TEXT PRIMARY KEY REFERENCES items(id), card INTEGER NOT NULL,
                        closed INTEGER NOT NULL, hash TEXT NOT NULL, at TEXT NOT NULL);
     """,
+    """
+    CREATE TABLE requests(id INTEGER PRIMARY KEY, item_id TEXT NOT NULL REFERENCES items(id), at TEXT NOT NULL,
+                          ask TEXT NOT NULL, via TEXT NOT NULL, parent INTEGER REFERENCES requests(id),
+                          state TEXT NOT NULL DEFAULT 'open', reply TEXT, tries INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE drafts(item_id TEXT PRIMARY KEY REFERENCES items(id), at TEXT NOT NULL, text TEXT NOT NULL);
+    """,
 ]
 SCHEMA_VERSION = len(MIGRATIONS)
+REQUEST = ("id", "item_id", "at", "ask", "via", "parent", "state", "reply", "tries")  # state: open · answered · needs_session
 
 
 def utc(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
+
+
+def local_day(day: date, tz: str) -> tuple[datetime, datetime]:
+    """The owner's calendar day as a UTC [start, end) range — caps and the report count the same day."""
+    start = datetime.combine(day, time(), ZoneInfo(tz))
+    return start.astimezone(timezone.utc), (start + timedelta(days=1)).astimezone(timezone.utc)
 
 
 class Store:
@@ -125,6 +139,44 @@ class Store:
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO meta VALUES (?,?)", (key, value))
 
-    def runs_today(self, job: str) -> int:
-        today = datetime.now(timezone.utc).date().isoformat()
-        return self.db.execute("SELECT count(*) FROM runs WHERE job=? AND at LIKE ?", (job, today + "%")).fetchone()[0]
+    def runs_between(self, start: datetime, end: datetime, job: str | None = None) -> list[tuple]:
+        """(job, backend, model, seconds, ok) rows in [start, end). Stored as UTC ISO text, so text order is time order."""
+        q, args = "SELECT job, backend, model, seconds, ok FROM runs WHERE at >= ? AND at < ?", (utc(start), utc(end))
+        if job:
+            q, args = q + " AND job=?", (*args, job)
+        return self.db.execute(q + " ORDER BY id", args).fetchall()
+
+    def add_request(self, item_id: str, ask: str, via: str, parent: int | None = None) -> int:
+        with self.db:
+            return self.db.execute("INSERT INTO requests(item_id, at, ask, via, parent) VALUES (?,?,?,?,?)",
+                                   (item_id, utc(datetime.now(timezone.utc)), ask, via, parent)).lastrowid
+
+    def _requests(self, where: str, args: tuple) -> list[dict]:
+        return [dict(zip(REQUEST, r)) for r in self.db.execute(f"SELECT {', '.join(REQUEST)} FROM requests {where}", args)]
+
+    def request(self, rid: int) -> dict | None:
+        return next(iter(self._requests("WHERE id=?", (rid,))), None)
+
+    def requests(self, item_id: str) -> list[dict]:
+        return self._requests("WHERE item_id=? ORDER BY id DESC", (item_id,))
+
+    def open_requests(self) -> list[dict]:
+        return self._requests("WHERE state='open' ORDER BY id", ())
+
+    def answer_request(self, rid: int, state: str, reply: str) -> None:
+        with self.db:
+            self.db.execute("UPDATE requests SET state=?, reply=? WHERE id=?", (state, reply, rid))
+
+    def fail_request(self, rid: int) -> int:
+        """Counts one failed attempt; returns the attempts so far."""
+        with self.db:
+            self.db.execute("UPDATE requests SET tries=tries+1 WHERE id=?", (rid,))
+        return self.request(rid)["tries"]
+
+    def set_draft(self, item_id: str, text: str) -> None:
+        with self.db:
+            self.db.execute("INSERT OR REPLACE INTO drafts VALUES (?,?,?)", (item_id, utc(datetime.now(timezone.utc)), text))
+
+    def draft(self, item_id: str) -> str | None:
+        r = self.db.execute("SELECT text FROM drafts WHERE item_id=?", (item_id,)).fetchone()
+        return r[0] if r else None

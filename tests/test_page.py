@@ -86,3 +86,21 @@ def test_http(server):
     assert code == 400 and "who and until" in err
     assert call(base + "/api/mark", {"item_id": "nope", "status": "feito"})[0] == 404
     assert call(base + "/api/mark", {"item_id": ids[1], "status": "reaberto"})[0] == 400
+
+
+def test_ask_queues_a_request_and_state_shows_it(server, tmp_path):
+    base, ids = server
+    code, body = call(base + "/api/ask", {"item_id": ids[0], "ask": "responde que sim"})
+    rid = json.loads(body)["id"]
+    assert code == 200
+    code, body = call(base + "/api/ask", {"item_id": ids[0], "ask": "e o prazo?"})
+    s = Store(tmp_path / "aos.db")
+    assert s.request(json.loads(body)["id"])["parent"] == rid                 # a new ask follows up the last one
+    s.answer_request(rid, "answered", "Feito: novo rascunho.")
+    s.set_draft(ids[0], "Oi, sim!")
+    s.close()
+    by = {i["id"]: i for i in json.loads(call(base + "/api/state")[1])["items"]}
+    assert [r["ask"] for r in by[ids[0]]["requests"]] == ["e o prazo?", "responde que sim"]
+    assert by[ids[0]]["requests"][1]["reply"] == "Feito: novo rascunho." and by[ids[0]]["draft"] == "Oi, sim!"
+    assert call(base + "/api/ask", {"item_id": ids[0], "ask": "  "})[0] == 400
+    assert call(base + "/api/ask", {"item_id": "nope", "ask": "x"})[0] == 404

@@ -82,8 +82,9 @@ def test_caps(tmp_path):
     s = Store(tmp_path / "aos.db")
     assert len(run(s, FakePlugin(5), FakeBackend(), cfg(per_pass=2))["briefed"]) == 2
     s2 = Store(tmp_path / "b.db")
-    for _ in range(3):
-        s2.log_run("brief", "claude", "haiku", 1.0, True)
+    for at in (T0, T0, T0, T0 - timedelta(days=1)):                  # the cap counts the owner's day only
+        s2.db.execute("INSERT INTO runs(at, job, backend, model, seconds, ok) VALUES (?, 'brief', 'claude', 'haiku', 1, 1)",
+                      (at.isoformat(),))
     assert len(run(s2, FakePlugin(5), FakeBackend(), cfg(per_day=4))["briefed"]) == 1
 
 
@@ -126,3 +127,96 @@ def test_surface_runs_after_briefs(tmp_path):
     s, surf = Store(tmp_path / "aos.db"), FakeSurface()
     r = run_pass(s, [(FakePlugin(1), None)], FakeBackend(), None, cfg(), TODAY, surfaces=[(surf, None)])
     assert surf.seen == [["i0"]] and r["surfaced"] == ["#1 +x"]
+
+
+from assistantos.models import RequestPlan, Triage
+
+
+class PlanBackend(FakeBackend):
+    def __init__(self, plan=None, fail=None):
+        super().__init__(fail)
+        self.plan = plan
+
+    def ask(self, prompt, output, job):
+        if output is RequestPlan:
+            self.prompts.append(prompt)
+            if err := self.fail.get(len(self.prompts)):
+                raise err
+            return self.plan
+        return super().ask(prompt, output, job)
+
+
+class TriageJev(FakeJev):
+    def __init__(self, label=None, p=0.0):
+        super().__init__(0.9)
+        self.t = label and Triage(label=label, p=p)
+
+    def triage(self, ask_text, title=""):
+        return self.t
+
+
+def ask_on_fresh_item(tmp_path, backend, jev=None):
+    s, plugin = Store(tmp_path / "aos.db"), FakePlugin(1)
+    run(s, plugin, FakeBackend())
+    rid = s.add_request("i0", "responde dizendo que entrego sexta", "page")
+    r = run(s, plugin, backend, jev=jev)
+    return s, rid, r
+
+
+def test_request_draft_is_saved_and_answered(tmp_path):
+    b = PlanBackend(RequestPlan(action="draft", text="Oi! Entrego na sexta."))
+    s, rid, r = ask_on_fresh_item(tmp_path, b)
+    assert s.draft("i0") == "Oi! Entrego na sexta." and s.request(rid)["state"] == "answered"
+    assert "entrego sexta" in b.prompts[-1] and "pedido 0" in b.prompts[-1]
+    assert r["requests"] == [rid]
+
+
+def test_request_reply_and_session(tmp_path):
+    s, rid, _ = ask_on_fresh_item(tmp_path, PlanBackend(RequestPlan(action="reply", text="Ela pediu orçamento.")))
+    assert s.request(rid)["reply"] == "Ela pediu orçamento." and s.draft("i0") is None
+    s2, rid2, _ = ask_on_fresh_item(tmp_path / "b", PlanBackend(RequestPlan(action="session", text="precisa do PDF")))
+    assert s2.request(rid2)["state"] == "needs_session" and "precisa do PDF" in s2.request(rid2)["reply"]
+
+
+def test_confident_jev_session_skips_the_model(tmp_path):
+    b = PlanBackend(RequestPlan(action="reply", text="x"))
+    s, rid, _ = ask_on_fresh_item(tmp_path, b, jev=TriageJev("sessao", 0.7))
+    assert s.request(rid)["state"] == "needs_session" and not any("entrego sexta" in p for p in b.prompts)
+
+
+def test_failed_request_stays_open(tmp_path):
+    b = PlanBackend(RequestPlan(action="reply", text="x"), fail={1: BackendError("claude: down")})
+    s, plugin = Store(tmp_path / "aos.db"), FakePlugin(1)
+    run(s, plugin, FakeBackend())
+    rid = s.add_request("i0", "resume", "page")
+    r = run(s, plugin, b)
+    assert s.request(rid)["state"] == "open" and r["errors"]
+
+
+def test_request_failing_twice_goes_to_a_session(tmp_path):
+    b = PlanBackend(RequestPlan(action="reply", text="x"), fail={1: BackendError("bad json"), 2: BackendError("bad json")})
+    s, plugin = Store(tmp_path / "aos.db"), FakePlugin(1)
+    run(s, plugin, FakeBackend())
+    rid = s.add_request("i0", "resume", "page")
+    run(s, plugin, b)
+    run(s, plugin, b)
+    assert s.request(rid)["state"] == "needs_session" and "bad json" in s.request(rid)["reply"]
+    assert len(b.prompts) == 2
+
+
+def test_follow_up_carries_the_earlier_exchange(tmp_path):
+    b = PlanBackend(RequestPlan(action="reply", text="Ela pediu orçamento."))
+    s, rid, _ = ask_on_fresh_item(tmp_path, b)
+    s.add_request("i0", "e o valor?", "page", parent=rid)
+    run(s, FakePlugin(1), b)
+    assert "entrego sexta" in b.prompts[-1] and "Ela pediu orçamento." in b.prompts[-1] and "e o valor?" in b.prompts[-1]
+
+
+class RefreshPlugin(FakePlugin):
+    def refresh(self, cfg):
+        return "wacli sync: offline"
+
+
+def test_a_failing_refresh_is_reported_and_the_pass_goes_on(tmp_path):
+    r = run(Store(tmp_path / "aos.db"), RefreshPlugin(1), FakeBackend())
+    assert r["briefed"] == ["i0"] and r["errors"] == ["fake: wacli sync: offline"]

@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta, timezone
 
 from assistantos.models import Brief, Event, Item, Mark, Status
-from assistantos.store import SCHEMA_VERSION, Store
+from assistantos.store import SCHEMA_VERSION, Store, local_day
 
 BRT = timezone(timedelta(hours=-3))
 
@@ -60,7 +60,10 @@ def test_last_event_brief_label_meta_runs(tmp_path):
     s.set_meta("cursor:whatsapp", "x")
     assert s.get_meta("cursor:whatsapp") == "x" and s.get_meta("nope") is None
     s.log_run("brief", "claude", "haiku", 1.0, False)
-    assert s.runs_today("brief") == 1 and s.runs_today("tag") == 0
+    day = local_day(datetime.now(timezone.utc).date(), "UTC")
+    assert len(s.runs_between(*day, "brief")) == 1 and s.runs_between(*day, "tag") == []
+    sp = local_day(date(2026, 9, 30), "America/Sao_Paulo")
+    assert sp == (datetime(2026, 9, 30, 3, tzinfo=timezone.utc), datetime(2026, 10, 1, 3, tzinfo=timezone.utc))
     assert [i.id for i in s.items()] == ["wa:1"]
 
 
@@ -74,5 +77,20 @@ def test_v1_database_upgrades_with_its_data(tmp_path, monkeypatch):
     old.close()
     monkeypatch.undo()
     s = Store(tmp_path / "aos.db")
-    assert s.version() == SCHEMA_VERSION == 3
+    assert s.version() == SCHEMA_VERSION == 4
     assert [e.text for e in s.events("wa:1")] == ["antes"]
+
+
+def test_requests_and_drafts(tmp_path):
+    s = Store(tmp_path / "aos.db")
+    s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
+    r1 = s.add_request("wa:1", "responde que sim", "page")
+    r2 = s.add_request("wa:1", "e o prazo?", "page", parent=r1)
+    assert [r["id"] for r in s.open_requests()] == [r1, r2]
+    s.answer_request(r1, "answered", "Feito: novo rascunho.")
+    assert [r["id"] for r in s.open_requests()] == [r2]
+    assert s.request(r2)["parent"] == r1 and s.request(r1)["reply"] == "Feito: novo rascunho."
+    assert [r["id"] for r in s.requests("wa:1")] == [r2, r1]          # newest first
+    assert s.draft("wa:1") is None
+    s.set_draft("wa:1", "Oi Kat, sim!")
+    assert s.draft("wa:1") == "Oi Kat, sim!"

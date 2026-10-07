@@ -35,7 +35,7 @@ Born from Ian Gallina's personal AIOS (`~/Projetos/AIS-OS`, private), which runs
 
 ## Phases
 
-0. Project + context (done 2026-09-28). Build steps 1–5 of the spec done 2026-10-01 (package, backends + Jev, loop + WhatsApp, page, Fizzy, install + schedule — CI installs on clean Windows/macOS and a real scheduled pass succeeds); next: step 6 (Google bridge after its spike, Gemini, daily report, bug-report + anonymizer, request worker). 1. Validate the wedge with 3–5 owner-operators + Windows spikes. 2. Install MVP — PowerShell/Python scripts (Windows first). 3. Education layer from the build itself. Plan: `docs/vision.md` § Roadmap.
+0. Project + context (done 2026-09-28). Build steps 1–5 of the spec done 2026-10-01 (package, backends + Jev, loop + WhatsApp, page, Fizzy, install + schedule — CI installs on clean Windows/macOS and a real scheduled pass succeeds); step 6: request worker, daily report, bug-report + anonymizer done 2026-10-03; v0.1.0 (first version: + wacli sync each pass, update, export, uninstall) 2026-10-04; next: Google bridge and Gemini, each after its spike. 1. Validate the wedge with 3–5 owner-operators + Windows spikes. 2. Install MVP — PowerShell/Python scripts (Windows first). 3. Education layer from the build itself. Plan: `docs/vision.md` § Roadmap.
 
 ## Rules
 

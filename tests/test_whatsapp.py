@@ -75,3 +75,42 @@ def test_load_plugins(tmp_path):
     (tmp_path / "whatsapp.json").write_text('{"chats": "not a list"}', encoding="utf-8")
     with pytest.raises(ConfigError, match="whatsapp.json: chats"):
         load_plugins(tmp_path)
+
+
+import subprocess
+
+
+class Run:
+    def __init__(self, rc=0, err="", timeout=False):
+        self.rc, self.err, self.timeout, self.argv = rc, err, timeout, None
+
+    def __call__(self, argv, **kw):
+        self.argv = argv
+        if self.timeout:
+            raise subprocess.TimeoutExpired(argv, kw.get("timeout"))
+        return subprocess.CompletedProcess(argv, self.rc, "", self.err)
+
+
+def test_refresh_syncs_once_into_the_store_folder(tmp_path, monkeypatch):
+    monkeypatch.setattr("shutil.which", lambda name: "/bin/wacli")
+    cfg, run = WhatsAppConfig(store=str(tmp_path / "w" / "wacli.db"), chats=[KAT]), Run()
+    assert WhatsApp().refresh(cfg, run) is None
+    assert run.argv[:3] == ["/bin/wacli", "sync", "--once"] and run.argv[-2:] == ["--store", str(tmp_path / "w")]
+
+
+@pytest.mark.parametrize("run,problem", [
+    (Run(1, "store is locked (another wacli is running?): store locked"), None),   # a --follow daemon keeps it current
+    (Run(1, "boot\nnot authenticated; run wacli auth"), "not authenticated; run wacli auth"),
+    (Run(timeout=True), "180"),
+])
+def test_refresh_problems(tmp_path, monkeypatch, run, problem):
+    monkeypatch.setattr("shutil.which", lambda name: "/bin/wacli")
+    got = WhatsApp().refresh(WhatsAppConfig(store=str(tmp_path / "wacli.db"), chats=[KAT]), run)
+    assert got is None if problem is None else problem in got
+
+
+def test_refresh_skips_without_chats_and_names_a_missing_wacli(tmp_path, monkeypatch):
+    run = Run()
+    assert WhatsApp().refresh(WhatsAppConfig(chats=[]), run) is None and run.argv is None
+    monkeypatch.setattr("shutil.which", lambda name: None)
+    assert "wacli" in WhatsApp().refresh(WhatsAppConfig(chats=[KAT]), run)

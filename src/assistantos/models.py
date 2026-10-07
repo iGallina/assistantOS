@@ -127,9 +127,9 @@ class Brief(Strict):
 
 
 class RequestPlan(Strict):
-    action: Literal["reply", "draft", "task", "event", "session"]
+    """What to do with one owner request. Code runs it only from this allowlist; nothing is ever sent."""
+    action: Literal["reply", "draft", "session"]   # answer the owner · new draft to the contact · needs tools/files
     text: str
-    when: str  # ISO date-time for task/event, "" otherwise
 
 
 class Triage(Strict):

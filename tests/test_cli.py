@@ -45,6 +45,7 @@ import sqlite3
 import time
 
 from assistantos import cli
+from assistantos.backends import BackendError
 from assistantos.models import Brief
 
 JID = "5561000000001@s.whatsapp.net"
@@ -76,13 +77,20 @@ def test_run_one_pass(tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("AOS_HOME", str(tmp_path))
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
     monkeypatch.setattr(cli, "make_backend", lambda cfg, store: _Backend())
+    monkeypatch.setattr("assistantos.plugins.whatsapp.WhatsApp.refresh", lambda self, cfg: None)  # fake store: no sync
     main(["init"])
     _wacli(tmp_path / "wacli.db")
     (tmp_path / "local" / "config" / "whatsapp.json").write_text(
         json.dumps({"store": str(tmp_path / "wacli.db"), "chats": [JID]}), encoding="utf-8")
     capsys.readouterr()
     assert main(["run"]) == 0
-    assert capsys.readouterr().out.strip() == t("run.summary", new=1, briefed=1, errors=0)
+    assert capsys.readouterr().out.strip() == t("run.summary", new=1, briefed=1, requests=0, errors=0)
+    reports = list((tmp_path / "local" / "reports").glob("*.html"))
+    assert len(reports) == 1 and "Kat" in reports[0].read_text(encoding="utf-8")
+    opened = []
+    monkeypatch.setattr("webbrowser.open", opened.append)
+    assert main(["report"]) == 0
+    assert capsys.readouterr().out.strip() == str(reports[0]) and opened == [reports[0].as_uri()]
 
 
 def test_doctor_reports_a_broken_plugin(tmp_path, monkeypatch, capsys):
@@ -166,3 +174,90 @@ def test_setup_inits_schedules_and_checks(tmp_path, monkeypatch, capsys, fake_cl
     assert sched.calls[0][0] == "install" and sched.calls[0][1] == tmp_path
     assert main(["schedule", "status"]) == 0 and "Ready" in capsys.readouterr().out
     assert main(["schedule", "remove"]) == 0 and sched.calls[-1] == ("remove",)
+
+
+def test_run_errors_land_in_errors_log(tmp_path, monkeypatch):
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+
+    class Down:
+        def ask(self, prompt, output, job):
+            raise BackendError("claude: down")
+    monkeypatch.setattr(cli, "make_backend", lambda cfg, store: Down())
+    monkeypatch.setattr("assistantos.plugins.whatsapp.WhatsApp.refresh", lambda self, cfg: None)
+    main(["init"])
+    _wacli(tmp_path / "wacli.db")
+    (tmp_path / "local" / "config" / "whatsapp.json").write_text(
+        json.dumps({"store": str(tmp_path / "wacli.db"), "chats": [JID]}), encoding="utf-8")
+    assert main(["run"]) == 0
+    assert "claude: down" in (tmp_path / "local" / "state" / "errors.log").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("answer,opens", [("s", True), ("n", False), (EOFError, False)])
+def test_bug_report_asks_before_opening(tmp_path, monkeypatch, capsys, answer, opens):
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    main(["init"])
+    (tmp_path / "local" / "state").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "local" / "state" / "errors.log").write_text("2026-10-03 run: wa:5561999998888@s.whatsapp.net: x\n",
+                                                            encoding="utf-8")
+
+    def reply(prompt=""):
+        if answer is EOFError:
+            raise EOFError
+        return answer
+    monkeypatch.setattr("builtins.input", reply)
+    opened = []
+    monkeypatch.setattr("webbrowser.open", opened.append)
+    owner = tmp_path / "local" / "config" / "owner.json"
+    owner.write_text(owner.read_text(encoding="utf-8").replace("SEU NOME", "Ana Lima"), encoding="utf-8")
+    assert main(["bug-report", "a página não abre pra Ana Lima"]) == 0
+    out = capsys.readouterr().out
+    saved = list((tmp_path / "local" / "reports").glob("bug-*.md"))
+    assert len(saved) == 1 and "5561999998888" not in saved[0].read_text(encoding="utf-8") + out
+    assert "a página não abre" in out and "[whatsapp]" in out
+    assert (len(opened) == 1) == opens
+    if opens:
+        assert "5561999998888" not in opened[0] and "Ana" not in opened[0] and "issues/new" in opened[0]
+        assert "title=bug%3A+a+p%C3%A1gina+n%C3%A3o+abre+pra+%5Bcontato%5D" in opened[0]
+
+
+def _installed(tmp_path, monkeypatch):
+    import zipfile  # noqa: F401
+    from assistantos.models import Item
+    from assistantos.store import Store
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    main(["init"])
+    s = Store(tmp_path / "local" / "state" / "aos.db")
+    s.upsert_item(Item(id="wa:1", source="whatsapp", title="Kat"))
+    s.close()
+    (tmp_path / "local" / "bin").mkdir()
+    (tmp_path / "local" / "bin" / "wacli").write_bytes(b"binary")
+
+
+def test_export_zips_config_and_a_consistent_store(tmp_path, monkeypatch, capsys):
+    import sqlite3
+    import zipfile
+    _installed(tmp_path, monkeypatch)
+    assert main(["export"]) == 0
+    path = tmp_path / capsys.readouterr().out.strip().splitlines()[-1].split(": ", 1)[1]
+    names = zipfile.ZipFile(path).namelist()
+    assert "local/config/owner.json" in names and "local/state/aos.db" in names
+    assert not any(n.startswith("local/bin") for n in names)
+    zipfile.ZipFile(path).extract("local/state/aos.db", tmp_path / "x")
+    assert sqlite3.connect(tmp_path / "x" / "local" / "state" / "aos.db").execute("select title from items").fetchone() == ("Kat",)
+
+
+def test_uninstall_exports_then_removes_the_schedule_and_keeps_files(tmp_path, monkeypatch, capsys):
+    sched = _Sched()
+    _installed(tmp_path, monkeypatch)
+    monkeypatch.setattr(cli, "scheduler", lambda: sched)
+    assert main(["uninstall"]) == 0
+    assert sched.calls == [("remove",)] and list(tmp_path.glob("assistantos-export-*.zip"))
+    assert (tmp_path / "local" / "state" / "aos.db").exists()
+    assert str(tmp_path / "local") in capsys.readouterr().out
+
+
+def test_update_prints_the_outcome(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("AOS_HOME", str(tmp_path))
+    monkeypatch.setattr("assistantos.update.update", lambda h: (1, "sem o remoto 'upstream'"))
+    assert main(["update"]) == 1 and capsys.readouterr().out.strip() == "✗ sem o remoto 'upstream'"
