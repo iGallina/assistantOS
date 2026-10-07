@@ -108,7 +108,7 @@ def cmd_run(h: Path) -> int:
         print("    " + line)
     for e in r["errors"]:
         log_error(h, "run: " + e)
-    write_report(store, cfg, today, h / "local" / "reports")
+    write_report(store, cfg, today, h / "local" / "reports", h / "local" / "state" / "errors.log")
     return 0
 
 
@@ -122,7 +122,7 @@ def cmd_report(h: Path) -> int:
             print("    " + p)
         return 1
     path = write_report(Store(h / "local" / "state" / "aos.db"), cfg, datetime.now(ZoneInfo(cfg.owner.timezone)).date(),
-                        h / "local" / "reports")
+                        h / "local" / "reports", h / "local" / "state" / "errors.log")
     print(path)
     webbrowser.open(path.as_uri())
     return 0

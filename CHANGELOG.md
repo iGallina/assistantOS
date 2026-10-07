@@ -15,8 +15,8 @@ Primeira versão.
 - **Página local** (`aos page`): decidir agora, em aberto, aguardando, depois, resolvidos; marcar, adiar,
   aguardar alguém; pedir ao assistente (responder, novo rascunho, ou "precisa de sessão").
 - **Fizzy**: cada loop aberto vira um cartão no seu quadro, nos dois sentidos.
-- **Relatório do dia** (`local/reports/`): o que chegou, o que decidir, pedidos pendentes, prompts sugeridos e o
-  uso de IA em segundo plano.
+- **Relatório do dia** (`local/reports/`): problemas das passadas de hoje (ex.: WhatsApp desconectado), o que
+  chegou, o que decidir, pedidos pendentes, prompts sugeridos e o uso de IA em segundo plano.
 - **`aos bug-report`**: relatório de erro mascarado no seu computador (telefones, CPF/CNPJ, e-mails, chaves,
   contatos…); você revisa e envia pelo GitHub.
 - **`aos update`**, **`aos export`**, **`aos uninstall`**; erros de cada passada em `local/state/errors.log`.

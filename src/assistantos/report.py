@@ -1,6 +1,6 @@
 """The daily report: one self-contained HTML page per day in local/reports/, rewritten after every pass. Pure code, no
 model call: the suggested prompts are built from text the model already wrote (briefs' next step, session replies)."""
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date
 from html import escape
 from pathlib import Path
@@ -11,7 +11,16 @@ from .page.state import build_state
 from .store import Store, local_day
 
 
-def build_report(store: Store, cfg: Config, today: date) -> dict:
+def _problems(errors_log: Path | None, today: date) -> list[tuple[str, int]]:
+    """Today's pass errors, one line each, repeats counted: the same failure every 5 minutes is one problem."""
+    if not errors_log or not errors_log.exists():
+        return []
+    day = today.isoformat()
+    lines = [l[20:] for l in errors_log.read_text(encoding="utf-8", errors="replace").splitlines() if l.startswith(day)]
+    return list(Counter(lines).items())
+
+
+def build_report(store: Store, cfg: Config, today: date, errors_log: Path | None = None) -> dict:
     start, end = local_day(today, cfg.owner.timezone)
     items, lang = build_state(store, today)["items"], cfg.owner.language
     came_in = []
@@ -33,7 +42,7 @@ def build_report(store: Store, cfg: Config, today: date) -> dict:
     return {"day": today.isoformat(), "came_in": came_in, "decide": decide, "requests": requests,
             "spend": [{"job": j, "backend": b, **v, "seconds": round(v["seconds"], 1)} for (j, b), v in sorted(spend.items())],
             "brief_cap": {"used": sum(r[0] == "brief" for r in store.runs_between(start, end)), "cap": cfg.backend.per_day_cap},
-            "prompts": prompts}
+            "prompts": prompts, "problems": _problems(errors_log, today)}
 
 
 def _render(r: dict, lang: str) -> str:
@@ -53,6 +62,7 @@ pre {{ white-space: pre-wrap; background: #f5f5f7; border-radius: 8px; padding: 
 table {{ border-collapse: collapse; }} td, th {{ padding: 4px 12px 4px 0; text-align: left; }}
 </style></head><body>
 <h1>{T('title', day=r['day'])}</h1>
+{section('problems', [f"<li>{e(p)}" + (f" ({n}×)" if n > 1 else "") + "</li>" for p, n in r['problems']]) if r['problems'] else ''}
 {section('decide', [f"<li><b>{e(d['title'])}</b>: {e(d['decisao'] or t('page.no_brief', lang))}</li>" for d in r['decide']])}
 {section('requests', [f"<li><b>{e(q['title'])}</b>: {e(q['ask'])}<br><small>{e(q['reply'] or t('page.ask_queued', lang))}</small></li>"
                       for q in r['requests']])}
@@ -67,8 +77,8 @@ table {{ border-collapse: collapse; }} td, th {{ padding: 4px 12px 4px 0; text-a
 """
 
 
-def write_report(store: Store, cfg: Config, today: date, folder: Path) -> Path:
+def write_report(store: Store, cfg: Config, today: date, folder: Path, errors_log: Path | None = None) -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / f"{today.isoformat()}.html"
-    path.write_text(_render(build_report(store, cfg, today), cfg.owner.language), encoding="utf-8")
+    path.write_text(_render(build_report(store, cfg, today, errors_log), cfg.owner.language), encoding="utf-8")
     return path

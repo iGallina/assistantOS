@@ -74,5 +74,6 @@
   "bug.saved": "Relatório salvo (já mascarado): {path}",
   "bug.confirm": "Abrir no GitHub para você revisar e enviar? Nada sai sem você clicar em Enviar lá. [s/N] ",
   "export.done": "Cópia salva: {path}",
-  "uninstall.kept": "Seus arquivos continuam em {local} — apague a pasta quando quiser (a cópia acima tem tudo)."
+  "uninstall.kept": "Seus arquivos continuam em {local} — apague a pasta quando quiser (a cópia acima tem tudo).",
+  "report.problems": "Problemas nas passadas de hoje"
 }
