@@ -56,3 +56,16 @@ def test_write_report_escapes_and_rewrites(tmp_path):
     assert "Aceitar o prazo?" in html and "<html lang=\"pt-BR\">" in html
     s.add_request("i0", "novo pedido", "page")
     assert "novo pedido" in write_report(s, cfg(), TODAY, tmp_path / "reports").read_text(encoding="utf-8")
+
+
+def test_problems_today_come_from_errors_log_deduplicated(tmp_path):
+    log = tmp_path / "errors.log"
+    log.write_text("2026-09-29 23:55:00 run: whatsapp: wacli sync: old\n"
+                   "2026-09-30 08:00:00 run: whatsapp: wacli sync: not authenticated\n"
+                   "2026-09-30 08:05:00 run: whatsapp: wacli sync: not authenticated\n"
+                   "2026-09-30 09:00:00 aos run crashed:\nTraceback (most recent call last):\n  boom\n", encoding="utf-8")
+    r = build_report(seed(tmp_path), cfg(), TODAY, log)
+    assert r["problems"] == [("run: whatsapp: wacli sync: not authenticated", 2), ("aos run crashed:", 1)]
+    html = write_report(seed(tmp_path / "b"), cfg(), TODAY, tmp_path / "reports", log).read_text(encoding="utf-8")
+    assert "not authenticated" in html and "(2×)" in html
+    assert build_report(seed(tmp_path / "c"), cfg(), TODAY)["problems"] == []
