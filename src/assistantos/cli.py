@@ -3,8 +3,10 @@ import os
 import shutil
 import sqlite3
 import sys
+import tempfile
 import traceback
-from contextlib import redirect_stdout
+import zipfile
+from contextlib import closing, redirect_stdout
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
@@ -126,6 +128,48 @@ def cmd_report(h: Path) -> int:
     return 0
 
 
+def _lang(h: Path) -> str:
+    try:
+        return load_config(h / "local" / "config").owner.language
+    except ConfigError:
+        return "pt-BR"
+
+
+def cmd_export(h: Path) -> int:
+    """Everything the owner has (config, store, reports, logs) in one zip; local/bin is only downloaded tools."""
+    path = h / f"assistantos-export-{datetime.now():%Y%m%d-%H%M%S}.zip"
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z, tempfile.TemporaryDirectory() as tmp:
+        for f in sorted((h / "local").rglob("*")):
+            rel = f.relative_to(h).as_posix()
+            if not f.is_file() or rel.startswith("local/bin/") or f.name.endswith(("-wal", "-shm", "-journal")):
+                continue
+            if f.suffix == ".db":  # a consistent copy even if a pass is writing right now
+                snap, src = Path(tmp) / f.name, sqlite3.connect(f)
+                with closing(sqlite3.connect(snap)) as dst:
+                    src.backup(dst)
+                src.close()
+                f = snap
+            z.write(f, rel)
+    print(t("export.done", _lang(h), path=path))
+    return 0
+
+
+def cmd_uninstall(h: Path) -> int:
+    """Copy first, then stop the scheduled pass. Files stay: the owner deletes them, never us."""
+    cmd_export(h)
+    problem = scheduler().remove()
+    print(f"✗ {problem}" if problem else "✓ " + t("schedule.remove", _lang(h)))
+    print(t("uninstall.kept", _lang(h), local=h / "local"))
+    return 1 if problem else 0
+
+
+def cmd_update(h: Path) -> int:
+    from .update import update
+    rc, msg = update(h)
+    print(("✓ " if rc == 0 else "✗ ") + msg)
+    return rc
+
+
 def cmd_bug_report(h: Path, description: str) -> int:
     import webbrowser
     lang = "pt-BR"
@@ -207,6 +251,9 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("doctor")
     sub.add_parser("run")
     sub.add_parser("report")
+    sub.add_parser("export")
+    sub.add_parser("update")
+    sub.add_parser("uninstall")
     sub.add_parser("bug-report").add_argument("description")
     sub.add_parser("page").add_argument("--port", type=int, default=8422)
     sub.add_parser("setup")
@@ -221,7 +268,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_page(h, a.port)
         if a.cmd == "bug-report":
             return cmd_bug_report(h, a.description)
-        return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "report": cmd_report, "setup": cmd_setup}[a.cmd](h)
+        return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "report": cmd_report, "setup": cmd_setup,
+                "export": cmd_export, "update": cmd_update, "uninstall": cmd_uninstall}[a.cmd](h)
     except Exception:
         log_error(h, f"aos {a.cmd} crashed:\n" + traceback.format_exc())
         raise

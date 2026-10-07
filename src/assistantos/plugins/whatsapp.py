@@ -1,6 +1,9 @@
 """WhatsApp through the wacli store, read-only. Scope is the owner's own list of chats (whatsapp.json): code decides
-what is read, never a model. Audio shows as "[audio]" until transcription lands (step 3c)."""
+what is read, never a model. Audio shows as "[audio]" until transcription lands (step 3c).
+Each pass first runs `wacli sync --once`, so the store is current without a daemon on any OS."""
+import shutil
 import sqlite3
+import subprocess
 import time
 from contextlib import closing
 from datetime import datetime, timezone
@@ -9,6 +12,9 @@ from pathlib import Path
 from pydantic import Field
 
 from ..models import Event, Item, Strict
+
+
+SYNC_TIMEOUT = 180
 
 
 class WhatsAppConfig(Strict):
@@ -37,6 +43,23 @@ class WhatsApp:
         except sqlite3.Error as e:
             return f"wacli store {cfg.store}: {e}"
         return None
+
+    def refresh(self, cfg: WhatsAppConfig, run=subprocess.run) -> str | None:
+        """Pull new messages into the store; None = fine. A locked store means another wacli (a --follow daemon)
+        already keeps it current. Any problem is reported and the pass still reads what the store has."""
+        if not cfg.chats:
+            return None
+        exe = shutil.which("wacli")
+        if not exe:
+            return "wacli não encontrado: rode `aos setup`"
+        try:
+            r = run([exe, "sync", "--once", "--idle-exit", "15s", "--store", str(Path(cfg.store).expanduser().parent)],
+                    capture_output=True, text=True, timeout=SYNC_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            return f"wacli sync: sem resposta em {SYNC_TIMEOUT} s"
+        if r.returncode == 0 or "store is locked" in r.stderr:
+            return None
+        return "wacli sync: " + ((r.stderr or r.stdout).strip().splitlines() or [f"exit {r.returncode}"])[-1]
 
     def poll(self, cfg: WhatsAppConfig, since: datetime | None) -> tuple[list[Item], list[Event]]:
         if not cfg.chats:
