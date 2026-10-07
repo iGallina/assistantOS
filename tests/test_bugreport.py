@@ -15,7 +15,7 @@ LEAKS = {
     "ghp_0123456789abcdefABCDEF0123456789abcd": "[chave]", "a3f9c0d1e2b4a5f6c7d8e9f0a1b2c3d4e5f6a7b8": "[chave]",
     # residue measured on a real WhatsApp store (2026-10-03): 1,053 digit runs survived the labelled patterns
     "12345678909": "[número]", "70000-000": "[número]", "33334444": "[número]", "99999-8888": "[número]",
-    "113-1234567-1234567": "[número]", "415-555-0100": "[número]", "9 9999-8888": "[número]", "100.72.148.88": "[número]",
+    "113-1234567-1234567": "[número]", "415-555-0100": "[número]", "9 9999-8888": "[número]", "10.20.30.40": "[número]",
     "pedido PO12345678": "[número]", "/p/abc1234567890?x": "[número]", "_9999999999_": "[número]",
     "11-22-33-4444": "[número]",
 }
