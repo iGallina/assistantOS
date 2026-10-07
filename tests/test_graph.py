@@ -210,3 +210,13 @@ def test_follow_up_carries_the_earlier_exchange(tmp_path):
     s.add_request("i0", "e o valor?", "page", parent=rid)
     run(s, FakePlugin(1), b)
     assert "entrego sexta" in b.prompts[-1] and "Ela pediu orçamento." in b.prompts[-1] and "e o valor?" in b.prompts[-1]
+
+
+class RefreshPlugin(FakePlugin):
+    def refresh(self, cfg):
+        return "wacli sync: offline"
+
+
+def test_a_failing_refresh_is_reported_and_the_pass_goes_on(tmp_path):
+    r = run(Store(tmp_path / "aos.db"), RefreshPlugin(1), FakeBackend())
+    assert r["briefed"] == ["i0"] and r["errors"] == ["fake: wacli sync: offline"]

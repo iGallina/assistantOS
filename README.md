@@ -26,4 +26,6 @@ A página: `uv run aos page` → http://127.0.0.1:8422
 
 ## Comandos
 
-`aos init` · `aos doctor` · `aos run` (uma passada; reescreve o relatório do dia em `local/reports/`) · `aos page` · `aos report` (abre o relatório do dia) · `aos setup` · `aos schedule install|remove|status`
+`aos init` · `aos doctor` · `aos run` (uma passada; reescreve o relatório do dia em `local/reports/`) · `aos page` · `aos report` (abre o relatório do dia) · `aos bug-report "o que aconteceu"` (relatório de erro mascarado no seu computador; você revisa e envia) · `aos setup` · `aos schedule install|remove|status` · `aos update` (instala a versão mais nova; se falhar, volta sozinho) · `aos export` (um .zip com tudo que é seu) · `aos uninstall` (faz a cópia, tira o agendamento; seus arquivos ficam)
+
+Novidades de cada versão: `CHANGELOG.md`.

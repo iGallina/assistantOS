@@ -12,3 +12,4 @@ local/state/
 .venv/
 .pytest_cache/
 local/reports/
+assistantos-export-*.zip
