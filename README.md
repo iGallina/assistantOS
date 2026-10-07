@@ -229,10 +229,9 @@ As novidades de cada versão estão em `CHANGELOG.md`.
 
 ## Para quem instala
 
-- **Repositório do cliente:** um repositório **privado** na conta GitHub do cliente, criado a partir do principal
-  (não um fork: fork de repositório público é público). Depois do clone, aponte o `upstream`:
-  `git remote add upstream https://github.com/iGallina/assistantOS.git`. Enquanto o principal for privado, a conta do
-  cliente precisa de **acesso de leitura** a ele, senão `aos update` e `aos bug-report` não funcionam.
+- **Repositório do cliente:** na conta GitHub do cliente, pelo botão **Use this template** do repositório principal,
+  escolhendo **Private** (não um fork: fork de repositório público é público). Depois do clone, aponte o `upstream`:
+  `git remote add upstream https://github.com/iGallina/assistantOS.git` (é dele que `aos update` busca as versões).
 - **O instalador** (`install\install.ps1` / `install/install.sh`) instala o `uv` e o Claude Code se faltarem, roda
   `uv sync --locked` e `aos setup`: ferramentas com versão fixa e SHA-256 conferido (wacli, fizzy, bws) em
   `local\bin`, configurações em `local\config` (a partir dos `*.example.json`) e a passada agendada (Agendador de
