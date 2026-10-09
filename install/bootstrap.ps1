@@ -11,6 +11,10 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
+# Started from PowerShell 7 (CI, or an owner who has it), Windows PowerShell inherits 7's PSModulePath and fails to load
+# its own modules ("Get-ExecutionPolicy ... could not be loaded"). Reset it to 5.1's defaults; child processes inherit this.
+$env:PSModulePath = @((Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WindowsPowerShell\Modules'),
+    (Join-Path $env:ProgramFiles 'WindowsPowerShell\Modules'), (Join-Path $env:SystemRoot 'system32\WindowsPowerShell\v1.0\Modules')) -join ';'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Base = Join-Path $env:LOCALAPPDATA 'assistantOS'
