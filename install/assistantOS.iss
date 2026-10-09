@@ -90,10 +90,10 @@ begin
                 '" -Step ' + StepName(I) + RefArg, '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
     begin
       Failed := True;
-      MsgBox('A instalação parou em: ' + StepLabel(I) + #13#10#13#10 +
+      SuppressibleMsgBox('A instalação parou em: ' + StepLabel(I) + #13#10#13#10 +
              'Rode o instalador de novo: ele continua de onde parou.' + #13#10 +
              'Se parar de novo, envie este arquivo para quem instalou com você:' + #13#10 +
-             ExpandConstant('{localappdata}\assistantOS\install.log'), mbError, MB_OK);
+             ExpandConstant('{localappdata}\assistantOS\install.log'), mbError, MB_OK, IDOK);
       Exit;
     end;
   end;

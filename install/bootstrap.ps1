@@ -38,6 +38,12 @@ function Run([string]$exe, [string[]]$argv) {
     Log "$exe $($argv -join ' ') -> exit $LASTEXITCODE`n$out"
     if ($LASTEXITCODE -ne 0) { throw "$exe $($argv[0]) falhou (código $LASTEXITCODE)" }
 }
+function RunInstaller([string]$url) {
+    # official install scripts run in their own process: an `exit` inside them can't end this one, and their output is logged
+    $f = Join-Path $env:TEMP ('aos-' + [guid]::NewGuid().ToString('N') + '.ps1')
+    Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $f
+    try { Run 'powershell.exe' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $f) } finally { Remove-Item $f -Force -ErrorAction SilentlyContinue }
+}
 function Fetch([string]$name) {
     $url, $sha = $Pins[$name][$Arch]
     $file = Join-Path $env:TEMP (Split-Path $url -Leaf)
@@ -65,7 +71,7 @@ $steps = [ordered]@{
     }
     uv     = {
         if (Has uv) { return }
-        Invoke-RestMethod https://astral.sh/uv/install.ps1 | Invoke-Expression
+        RunInstaller 'https://astral.sh/uv/install.ps1'
         if (-not (Has uv)) { throw 'uv não ficou disponível' }
     }
     core   = {
@@ -79,7 +85,7 @@ $steps = [ordered]@{
     }
     claude = {
         if (Has claude) { return }
-        Invoke-RestMethod https://claude.ai/install.ps1 | Invoke-Expression
+        RunInstaller 'https://claude.ai/install.ps1'
         if (-not (Has claude)) { throw 'Claude Code não ficou disponível' }
     }
     paseo  = {
