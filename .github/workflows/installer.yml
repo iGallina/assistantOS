@@ -1,6 +1,7 @@
 name: installer
 on:
   push:
+    branches: ["**"]   # with only tags: listed, GitHub would skip every branch push
     tags: ["v*"]   # a release: builds the .exe that installs this tag and attaches it to the GitHub release
     paths: ["install/**", ".github/workflows/installer.yml"]
   workflow_dispatch:
