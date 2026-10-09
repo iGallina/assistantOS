@@ -43,54 +43,44 @@ quiser e envia.
 | **Inteligência artificial** | Uma assinatura **Claude** (Pro ou superior) ou **ChatGPT** (Plus ou superior). É ela que escreve os resumos. **Não precisa de chave de API**: não há cobrança por uso além da sua assinatura. |
 | **WhatsApp** | O seu celular, para ler um QR code uma única vez (como no WhatsApp Web). |
 | **Fizzy** (opcional) | Uma conta no Fizzy, se quiser os cartões no celular. |
-| **Tempo** | Uns 40 minutos na instalação, de preferência junto com quem vai instalar para você. |
+| **Tempo** | Uns 20 minutos na instalação, de preferência junto com quem vai instalar para você. |
 
 ## Instalação
 
-A primeira instalação é feita **junto com você**: quem instala cuida da parte técnica, e há três momentos em que só
-você pode agir. Se algum comando abaixo parecer estranho, é normal: é só copiar e colar.
+1. **Baixe o instalador e dê dois cliques:**
+   [assistantOS-Setup.exe](https://github.com/iGallina/assistantOS/releases/latest/download/assistantOS-Setup.exe)
 
-**Antes de começar**, no Windows, abra o **PowerShell** (menu Iniciar → digite "PowerShell" → Enter).
+   Se aparecer **"O Windows protegeu o computador"**, clique em **Mais informações** e depois em
+   **Executar assim mesmo**. O aviso aparece porque o instalador ainda não tem assinatura digital.
 
-1. **Instale o Git** (se ainda não tiver):
-   ```
-   winget install --id Git.Git -e
-   ```
-   Feche o PowerShell e abra de novo.
+   O instalador não pede senha de administrador. Ele instala o Git, o Python (uv), o assistantOS, o Claude Code e o
+   Paseo, e agenda o assistente a cada 5 minutos. Leva de 5 a 15 minutos. No fim, fica um atalho **assistantOS** na
+   área de trabalho. Se parar no meio, rode de novo: ele continua de onde parou.
 
-2. **Baixe o seu assistantOS** (quem instala passa para você o endereço do **seu** repositório privado):
+2. **Os passos que só você pode fazer.** Por enquanto, eles usam o PowerShell (menu Iniciar → digite "PowerShell" →
+   Enter). Primeiro, entre na pasta do assistente:
    ```
-   git clone https://github.com/SEU-USUARIO/assistantOS.git
-   cd assistantOS
-   ```
-
-3. **Rode o instalador.** Ele instala o que falta, cria as suas configurações e agenda o assistente a cada 5 minutos:
-   ```
-   powershell -ExecutionPolicy Bypass -File install\install.ps1
-   ```
-   Pode rodar de novo quando quiser: ele nunca apaga nada seu.
-
-4. **Só você: entre na sua assinatura de IA.** Digite `claude`, escolha entrar com a sua conta Claude, conclua no
-   navegador e depois digite `/exit`.
-
-5. **Só você: conecte o WhatsApp.**
-   ```
-   .\local\bin\wacli.exe auth
-   ```
-   No celular: WhatsApp → **Aparelhos conectados** → **Conectar um aparelho** → leia o QR code que apareceu na tela.
-
-6. **Só você: diga quem você é.** Abra o arquivo e troque `SEU NOME` pelo seu nome:
-   ```
-   notepad local\config\owner.json
+   cd $env:LOCALAPPDATA\assistantOS\core
    ```
 
-7. **Escolha as conversas** (próxima seção) e confira se está tudo certo:
-   ```
-   uv run aos doctor
-   ```
-   Se tudo aparecer com ✓, está pronto. Se aparecer um ✗, ele diz o que falta.
+   - **Entre na sua assinatura de IA:** digite `claude`, escolha entrar com a sua conta Claude, conclua no navegador e
+     depois digite `/exit`.
+   - **Conecte o WhatsApp:**
+     ```
+     .\local\bin\wacli.exe auth
+     ```
+     No celular: WhatsApp → **Aparelhos conectados** → **Conectar um aparelho** → leia o QR code da tela.
+   - **Diga quem você é:** troque `SEU NOME` pelo seu nome neste arquivo:
+     ```
+     notepad local\config\owner.json
+     ```
+   - **Escolha as conversas** (próxima seção) e confira se está tudo certo:
+     ```
+     uv run aos doctor
+     ```
+     Se tudo aparecer com ✓, está pronto. Se aparecer um ✗, ele diz o que falta.
 
-No Mac é igual, só muda o instalador (`sh install/install.sh`) e o WhatsApp (`local/bin/wacli auth`).
+No Mac, quem instala usa `sh install/install.sh` dentro de uma cópia do repositório.
 
 ## Escolher as conversas
 
@@ -119,14 +109,8 @@ conversas que mais pesam no seu dia; dá para aumentar depois.
 
 ## Abrir a página
 
-No PowerShell, dentro da pasta `assistantOS`:
-
-```
-uv run aos page
-```
-
-Abra **http://127.0.0.1:8422** no navegador e deixe o PowerShell aberto enquanto usa a página. A página fica só no
-seu computador: ninguém mais acessa.
+Dê dois cliques no atalho **assistantOS** da área de trabalho (ou abra **http://127.0.0.1:8422** no navegador). A
+página liga sozinha quando você entra no Windows. Ela fica só no seu computador: ninguém mais acessa.
 
 ### As seções
 
@@ -229,13 +213,16 @@ As novidades de cada versão estão em `CHANGELOG.md`.
 
 ## Para quem instala
 
-- **Repositório do cliente:** na conta GitHub do cliente, pelo botão **Use this template** do repositório principal,
-  escolhendo **Private** (não um fork: fork de repositório público é público). Depois do clone, aponte o `upstream`:
-  `git remote add upstream https://github.com/iGallina/assistantOS.git` (é dele que `aos update` busca as versões).
-- **O instalador** (`install\install.ps1` / `install/install.sh`) instala o `uv` e o Claude Code se faltarem, roda
-  `uv sync --locked` e `aos setup`: ferramentas com versão fixa e SHA-256 conferido (wacli, fizzy, bws) em
-  `local\bin`, configurações em `local\config` (a partir dos `*.example.json`) e a passada agendada (Agendador de
-  Tarefas no Windows, launchd no macOS).
+- **Repositório:** o instalador baixa direto do repositório público, com o remoto `upstream` (é dele que
+  `aos update` busca as versões). Um repositório próprio do cliente só é preciso para mexer no núcleo: crie pelo
+  botão **Use this template**, escolhendo **Private** (fork de repositório público é público).
+- **O instalador do Windows** (`assistantOS-Setup.exe`, Inno Setup, por usuário) roda `install\bootstrap.ps1` passo a
+  passo: MinGit e Paseo com versão fixa e SHA-256 conferido, uv e Claude Code pelos instaladores oficiais, o
+  repositório em `%LOCALAPPDATA%\assistantOS\core` com o remoto `upstream`, `uv sync --locked`, `aos setup`
+  (wacli, fizzy, bws em `local\bin`, configurações em `local\config`, passada agendada) e a página ligada no logon.
+  Log: `%LOCALAPPDATA%\assistantOS\install.log`. Instalação silenciosa (suporte):
+  `assistantOS-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES`. No macOS: `install/install.sh` dentro de uma cópia do
+  repositório.
 - **Codex em vez de Claude:** `"kind": "codex"` em `local\config\backend.json`, instalar o Codex CLI e `codex login`.
 - **Fizzy:** o ID do quadro em `local\config\fizzy.json` e o token no ambiente do usuário (Windows:
   `setx FIZZY_TOKEN "..."` e `setx FIZZY_ACCOUNT "..."`; abra um PowerShell novo depois).

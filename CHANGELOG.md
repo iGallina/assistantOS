@@ -3,6 +3,14 @@
 Versões marcadas com tags `vX.Y.Z`. `aos update` instala a mais nova; mudanças no banco rodam sozinhas (migrações
 numeradas) e uma versão que falha no teste é desfeita.
 
+## v0.2.0 — 2026-10-09
+
+- **Instalador para Windows** (`assistantOS-Setup.exe`): dois cliques, sem terminal e sem senha de administrador.
+  Instala o Git, o Python (uv), o assistantOS, o Claude Code e o Paseo, agenda o assistente e deixa um atalho
+  **assistantOS** na área de trabalho. Se parar no meio, rodar de novo continua de onde parou.
+- **A página liga sozinha** quando você entra no Windows; não precisa mais deixar o PowerShell aberto.
+- O instalador não tem assinatura digital ainda: o Windows pede **Mais informações → Executar assim mesmo**.
+
 ## v0.1.0 — 2026-10-04
 
 Primeira versão.
