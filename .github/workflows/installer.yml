@@ -18,3 +18,31 @@ jobs:
         with:
           name: assistantOS-Setup
           path: dist/assistantOS-Setup.exe
+  install:
+    # The real thing on a Windows runner: the built .exe, silent, then check what a customer would get.
+    # Not a pristine PC (the runner already has git and uv), so those two steps take their "already there" path.
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: assistantOS-Setup
+      - name: Install silently
+        shell: pwsh
+        run: |
+          $p = Start-Process .\assistantOS-Setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/LOG=setup.log' -Wait -PassThru
+          Get-Content "$env:LOCALAPPDATA\assistantOS\install.log" -ErrorAction SilentlyContinue | Select-String ' == '
+          if ($p.ExitCode -ne 0) { Get-Content setup.log -Tail 30; throw "setup exit $($p.ExitCode)" }
+      - name: Check what the customer gets
+        shell: pwsh
+        run: |
+          $core = "$env:LOCALAPPDATA\assistantOS\core"
+          if (-not (Test-Path "$env:LOCALAPPDATA\Programs\Paseo\Paseo.exe")) { throw 'Paseo missing' }
+          if (-not (Test-Path "$core\.venv")) { throw 'assistantOS not set up' }
+          if ((git -C $core remote) -ne 'upstream') { throw 'remote is not upstream' }
+          Get-ScheduledTask -TaskName assistantOS, assistantOS-pagina | Format-Table TaskName, State
+          $ok = $false
+          foreach ($i in 1..30) { try { $r = Invoke-WebRequest http://127.0.0.1:8422/ -TimeoutSec 5; $ok = $r.StatusCode -eq 200; break } catch { Start-Sleep 2 } }
+          if (-not $ok) { throw 'page not answering on 127.0.0.1:8422' }
+          if (-not (Test-Path ([Environment]::GetFolderPath('Desktop') + '\assistantOS.url'))) { throw 'desktop shortcut missing' }
+          'installed: Paseo, assistantOS, scheduled pass, page 200, desktop shortcut'

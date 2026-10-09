@@ -100,6 +100,12 @@ begin
   WizardForm.ProgressGauge.Position := StepCount;
 end;
 
+function GetCustomSetupExitCode: Integer;
+begin
+  { a failed step is exit code 1, so a silent install (support, CI) cannot look like a success }
+  if Failed then Result := 1 else Result := 0;
+end;
+
 procedure CurPageChanged(CurPageID: Integer);
 begin
   if (CurPageID = wpFinished) and Failed then
