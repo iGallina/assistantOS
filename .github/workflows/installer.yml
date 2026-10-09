@@ -23,6 +23,7 @@ jobs:
     # Not a pristine PC (the runner already has git and uv), so those two steps take their "already there" path.
     needs: build
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/download-artifact@v4
         with:
@@ -30,9 +31,22 @@ jobs:
       - name: Install silently
         shell: pwsh
         run: |
-          $p = Start-Process .\assistantOS-Setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/LOG=setup.log' -Wait -PassThru
-          Get-Content "$env:LOCALAPPDATA\assistantOS\install.log" -ErrorAction SilentlyContinue | Select-String ' == '
-          if ($p.ExitCode -ne 0) { Get-Content setup.log -Tail 30; throw "setup exit $($p.ExitCode)" }
+          # wait for setup.exe itself, not its whole process tree (-Wait would also wait for anything it launches)
+          $p = Start-Process .\assistantOS-Setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/LOG=setup.log' -PassThru
+          $null = $p.Handle
+          $log = "$env:LOCALAPPDATA\assistantOS\install.log"; $seen = 0
+          $deadline = (Get-Date).AddMinutes(20)
+          while (-not $p.HasExited -and (Get-Date) -lt $deadline) {
+            Start-Sleep 10
+            $lines = @(Get-Content $log -ErrorAction SilentlyContinue | Select-String ' == ')
+            $lines[$seen..($lines.Count - 1)] | Where-Object { $_ } | ForEach-Object { $_.Line }; $seen = $lines.Count
+          }
+          if (-not $p.HasExited) {
+            Get-Content $log -Tail 40 -ErrorAction SilentlyContinue
+            Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name, CommandLine | Format-Table -AutoSize -Wrap | Out-String -Width 300
+            throw 'setup still running after 20 minutes'
+          }
+          if ($p.ExitCode -ne 0) { Get-Content $log -Tail 40; Get-Content setup.log -Tail 30; throw "setup exit $($p.ExitCode)" }
       - name: Check what the customer gets
         shell: pwsh
         run: |
