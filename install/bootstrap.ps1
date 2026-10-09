@@ -1,4 +1,4 @@
-# assistantOS — everything the Windows installer does, for the current user only (no admin, no UAC prompt).
+﻿# assistantOS — everything the Windows installer does, for the current user only (no admin, no UAC prompt).
 # Run by the Inno Setup wizard (install/assistantOS.iss) one step at a time; also runnable by hand:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1 [-Step git,uv,core,claude,paseo,setup,page] [-Ref main]
 # Every step is idempotent: running it again skips what is already in place. Log: %LOCALAPPDATA%\assistantOS\install.log

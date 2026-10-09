@@ -1,4 +1,4 @@
-# assistantOS — install on Windows. From the repo folder, in PowerShell:
+﻿# assistantOS — install on Windows. From the repo folder, in PowerShell:
 #   powershell -ExecutionPolicy Bypass -File install\install.ps1
 # Bypass applies to this one run only; the machine's script policy is not changed. Safe to run again.
 $ErrorActionPreference = 'Stop'

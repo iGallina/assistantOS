@@ -1,0 +1,19 @@
+name: installer
+on:
+  push:
+    paths: ["install/**", ".github/workflows/installer.yml"]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build assistantOS-Setup.exe (Inno Setup 6, preinstalled on the runner)
+        shell: pwsh
+        run: |
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q install\assistantOS.iss
+          Get-Item dist\assistantOS-Setup.exe | Select-Object Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assistantOS-Setup
+          path: dist/assistantOS-Setup.exe
