@@ -11,7 +11,8 @@ jobs:
       - name: Build assistantOS-Setup.exe (Inno Setup 6, preinstalled on the runner)
         shell: pwsh
         run: |
-          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q install\assistantOS.iss
+          $ref = if ("${{ github.ref_type }}" -eq "tag") { "" } else { "${{ github.ref_name }}" }   # tags = releases
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DRef=$ref" install\assistantOS.iss
           Get-Item dist\assistantOS-Setup.exe | Select-Object Name, Length
       - uses: actions/upload-artifact@v4
         with:

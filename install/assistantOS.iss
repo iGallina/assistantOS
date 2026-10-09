@@ -4,6 +4,10 @@
 #ifndef AppVersion
   #define AppVersion "0.1.0"
 #endif
+; Ref: test builds of a branch install that branch; a release build leaves it empty and installs the newest tag.
+#ifndef Ref
+  #define Ref ""
+#endif
 
 [Setup]
 AppId={{8046732A-8FB5-4379-9890-ABB450B75EB3}
@@ -70,7 +74,10 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   I, Code: Integer;
+  RefArg: String;
 begin
+  RefArg := '';
+  if '{#Ref}' <> '' then RefArg := ' -Ref {#Ref}';
   if CurStep <> ssPostInstall then Exit;
   WizardForm.ProgressGauge.Min := 0;
   WizardForm.ProgressGauge.Max := StepCount;
@@ -80,7 +87,7 @@ begin
     WizardForm.ProgressGauge.Position := I;
     WizardForm.Refresh;
     if not Exec('powershell.exe', '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\bootstrap.ps1') +
-                '" -Step ' + StepName(I), '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
+                '" -Step ' + StepName(I) + RefArg, '', SW_HIDE, ewWaitUntilTerminated, Code) or (Code <> 0) then
     begin
       Failed := True;
       MsgBox('A instalação parou em: ' + StepLabel(I) + #13#10#13#10 +
