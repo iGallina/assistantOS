@@ -1,0 +1,84 @@
+name: installer
+on:
+  push:
+    branches: ["**"]   # with only tags: listed, GitHub would skip every branch push
+    tags: ["v*"]   # a release: builds the .exe that installs this tag and attaches it to the GitHub release
+    paths: ["install/**", ".github/workflows/installer.yml"]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build assistantOS-Setup.exe (Inno Setup 6, preinstalled on the runner)
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_type }}" -eq "tag"
+          $ref = if ($tag) { "" } else { "${{ github.ref_name }}" }   # tags = releases, which install the newest tag
+          $ver = if ($tag) { "${{ github.ref_name }}".TrimStart('v') } else { "0.0.0-${{ github.ref_name }}" }
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DRef=$ref" "/DAppVersion=$ver" install\assistantOS.iss
+          Get-Item dist\assistantOS-Setup.exe | Select-Object Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: assistantOS-Setup
+          path: dist/assistantOS-Setup.exe
+  release:
+    # only for a tag, and only after the .exe installed cleanly on a fresh runner
+    if: github.ref_type == 'tag'
+    needs: install
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: assistantOS-Setup
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${{ github.ref_name }}" -R "${{ github.repository }}" >/dev/null 2>&1 \
+            || gh release create "${{ github.ref_name }}" -R "${{ github.repository }}" --title "${{ github.ref_name }}" --notes "Instalador para Windows: assistantOS-Setup.exe. Novidades: CHANGELOG.md."
+          gh release upload "${{ github.ref_name }}" assistantOS-Setup.exe -R "${{ github.repository }}" --clobber
+  install:
+    # The real thing on a Windows runner: the built .exe, silent, then check what a customer would get.
+    # Not a pristine PC (the runner already has git and uv), so those two steps take their "already there" path.
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: assistantOS-Setup
+      - name: Install silently
+        shell: pwsh
+        run: |
+          # wait for setup.exe itself, not its whole process tree (-Wait would also wait for anything it launches)
+          $p = Start-Process .\assistantOS-Setup.exe -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/LOG=setup.log' -PassThru
+          $null = $p.Handle
+          $log = "$env:LOCALAPPDATA\assistantOS\install.log"; $seen = 0
+          $deadline = (Get-Date).AddMinutes(8)
+          while (-not $p.HasExited -and (Get-Date) -lt $deadline) {
+            Start-Sleep 10
+            $lines = @(Get-Content $log -ErrorAction SilentlyContinue | Select-String ' == ')
+            $lines[$seen..($lines.Count - 1)] | Where-Object { $_ } | ForEach-Object { $_.Line }; $seen = $lines.Count
+          }
+          if (-not $p.HasExited) {
+            '--- setup.log (Inno)'; Get-Content setup.log -Tail 60 -ErrorAction SilentlyContinue
+            '--- install.log'; Get-Content $log -Tail 40 -ErrorAction SilentlyContinue
+            Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name, CommandLine | Format-Table -AutoSize -Wrap | Out-String -Width 300
+            throw 'setup still running after 8 minutes'
+          }
+          if ($p.ExitCode -ne 0) { Get-Content $log -Tail 40; Get-Content setup.log -Tail 30; throw "setup exit $($p.ExitCode)" }
+      - name: Check what the customer gets
+        shell: pwsh
+        run: |
+          $core = "$env:LOCALAPPDATA\assistantOS\core"
+          if (-not (Test-Path "$env:LOCALAPPDATA\Programs\Paseo\Paseo.exe")) { throw 'Paseo missing' }
+          if (-not (Test-Path "$core\.venv")) { throw 'assistantOS not set up' }
+          if ((git -C $core remote) -ne 'upstream') { throw 'remote is not upstream' }
+          Get-ScheduledTask -TaskName assistantOS, assistantOS-pagina | Format-Table TaskName, State
+          $ok = $false
+          foreach ($i in 1..30) { try { $r = Invoke-WebRequest http://127.0.0.1:8422/ -TimeoutSec 5; $ok = $r.StatusCode -eq 200; break } catch { Start-Sleep 2 } }
+          if (-not $ok) { throw 'page not answering on 127.0.0.1:8422' }
+          if (-not (Test-Path ([Environment]::GetFolderPath('Desktop') + '\assistantOS.url'))) { throw 'desktop shortcut missing' }
+          'installed: Paseo, assistantOS, scheduled pass, page 200, desktop shortcut'
