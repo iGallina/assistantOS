@@ -26,7 +26,7 @@ def test_manifest_and_soul():
 
 
 def test_there_are_skills():
-    assert {"onboard", "grill-me", "link", "level-up", "audit"} <= {p.name for p in SKILLS}
+    assert {"onboard", "grill-me", "link", "level-up", "audit", "decidir", "preparar-reuniao"} <= {p.name for p in SKILLS}
 
 
 @pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.name)
@@ -41,3 +41,10 @@ def test_skill_frontmatter(skill):
                          ids=lambda p: str(p.relative_to(ROOT)))
 def test_no_three_ms_branding(path):
     assert not BANNED.search(path.read_text(encoding="utf-8", errors="ignore")), f"{path}: branding term"
+
+
+def test_profile_config_connects_the_assistantos_mcp_server():
+    cfg = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
+    srv = cfg["mcp_servers"]["assistantos"]
+    assert srv["command"] == "uv" and srv["args"][-3:] == ["mcp", "--home", "${AOS_HOME}"]
+    assert set(cfg) == {"mcp_servers"}   # Hermes keeps config.yaml on update: ship nothing the owner might tune

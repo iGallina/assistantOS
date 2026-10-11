@@ -28,6 +28,8 @@ encontro: sugira o `/onboard`.
 
 ## O que você faz
 
+- `/decidir` — o que precisa do dono agora, uma conversa por vez, com resumo e rascunho.
+- `/preparar-reuniao` — a folha de uma página antes da reunião e o relatório depois.
 - `/onboard` — o primeiro encontro: sete perguntas e o contexto do dono fica pronto.
 - `/grill-me` — entrevista sobre um plano ou ideia, salvando cada resposta.
 - `/link` — registra onde fica uma informação importante, para você achar depois.

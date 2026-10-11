@@ -195,6 +195,19 @@ def cmd_bug_report(h: Path, description: str) -> int:
     return 0
 
 
+def cmd_mcp(h: Path) -> int:
+    """Serve the sweep to Hermes over MCP on stdin/stdout. Prints nothing: stdout is the protocol."""
+    from .mcp_server import make_server
+    cfg, tz = None, "America/Sao_Paulo"
+    try:
+        cfg = load_config(h / "local" / "config")
+        tz = cfg.owner.timezone
+    except ConfigError:
+        pass  # reads and marks still work; the daily report tool says the config is incomplete
+    make_server(h / "local" / "state" / "aos.db", lambda: datetime.now(ZoneInfo(tz)).date(), cfg).run("stdio")
+    return 0
+
+
 def cmd_page(h: Path, port: int) -> int:
     from .page.server import make_server
     lang, tz = "pt-BR", "America/Sao_Paulo"
@@ -251,6 +264,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("doctor")
     sub.add_parser("run")
     sub.add_parser("report")
+    sub.add_parser("mcp").add_argument("--home", help="assistantOS folder (MCP clients may not pass AOS_HOME)")
     sub.add_parser("export")
     sub.add_parser("update")
     sub.add_parser("uninstall")
@@ -266,6 +280,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if a.cmd == "page":
             return cmd_page(h, a.port)
+        if a.cmd == "mcp":
+            return cmd_mcp(Path(a.home) if a.home else h)
         if a.cmd == "bug-report":
             return cmd_bug_report(h, a.description)
         return {"init": cmd_init, "doctor": cmd_doctor, "run": cmd_run, "report": cmd_report, "setup": cmd_setup,
