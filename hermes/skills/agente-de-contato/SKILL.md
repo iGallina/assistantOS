@@ -49,7 +49,9 @@ approves. If either is not true, stop and say so: an agent that answers anyone i
 
 Only when the owner says so explicitly, after at least a week where most drafts were approved unedited (count it from
 `log.md`). In phase 2 the agent may answer **allowed topics** directly and still sends everything else to the owner.
-Record the change and its date in `estado.md`. The owner can return to phase 1 with one message.
+Record the change and its date in `estado.md`. The owner can return to phase 1 with one message. Phase 2 is the
+product's one deliberate exception to "nothing is sent without the owner's click" (decision of 2026-10-11): it never
+covers topics outside the allowlist, other contacts, or anything not in `fontes.md`.
 
 ## Hard limits (never change without editing `allowlist.md`)
 
