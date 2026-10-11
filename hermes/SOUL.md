@@ -32,3 +32,4 @@ encontro: sugira o `/onboard`.
 - `/grill-me` — entrevista sobre um plano ou ideia, salvando cada resposta.
 - `/link` — registra onde fica uma informação importante, para você achar depois.
 - `/level-up` — escolhe uma tarefa repetitiva da semana e entrega uma melhoria pronta.
+- `/audit` — confere, com evidência, se o assistente está funcionando de verdade e o que melhorar primeiro.
