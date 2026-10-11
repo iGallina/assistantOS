@@ -1,9 +1,10 @@
 name: hermes
-# The repo root is a Hermes profile distribution. Install the real Hermes Agent on a clean runner, install this
-# distribution from the checkout, and check what an owner's profile gets. No model call, no credentials.
+# hermes/ is a Hermes profile distribution (a subfolder: install copies the whole source folder into the profile).
+# Install the real Hermes Agent on a clean runner, install the distribution from the checkout, and check what an
+# owner's profile gets. No model call, no credentials.
 on:
   push:
-    paths: ["skills/**", "SOUL.md", "distribution.yaml", "mcp.json", "cron/**", ".github/workflows/hermes.yml"]
+    paths: ["hermes/**", ".github/workflows/hermes.yml"]
   workflow_dispatch:
 jobs:
   distribution:
@@ -18,14 +19,15 @@ jobs:
       - name: Install this distribution
         run: |
           hermes --version
-          hermes profile install "$GITHUB_WORKSPACE" -y
+          hermes profile install "$GITHUB_WORKSPACE/hermes" -y
           hermes profile info assistantos
       - name: Check the owner's profile
         run: |
           p="$HOME/.hermes/profiles/assistantos"
           test -s "$p/SOUL.md" && test -s "$p/distribution.yaml"
           for s in onboard grill-me link level-up; do test -s "$p/skills/$s/SKILL.md" || { echo "missing skill $s"; exit 1; }; done
-          for d in src install tests docs; do test ! -e "$p/$d" || { echo "$d leaked into the profile"; exit 1; }; done
+          for d in src install tests docs hermes pyproject.toml; do test ! -e "$p/$d" || { echo "$d leaked into the profile"; exit 1; }; done
+          ls -A "$p"
           hermes -p assistantos skills list | tee skills.txt
           for s in onboard grill-me link level-up; do grep -q -w "$s" skills.txt || { echo "Hermes does not list $s"; exit 1; }; done
           echo "profile ok: SOUL, manifest, 4 skills listed by Hermes, no source code copied"

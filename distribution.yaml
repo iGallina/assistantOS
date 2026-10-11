@@ -1,8 +1,0 @@
-# assistantOS as a Hermes profile distribution: `hermes profile install github.com/iGallina/assistantOS`.
-# Only distribution-owned files are copied into the profile (this file, SOUL.md, mcp.json, skills/, cron/); the Python
-# core, the Windows installer and docs/ stay in the repo. The owner's data goes to the profile's local/ (never updated).
-name: assistantos
-version: 0.3.0
-description: "assistantOS: o assistente do dono de pequeno negócio — mostra o que precisa da sua decisão nas conversas que você escolher, com a resposta rascunhada. Nunca envia nada por você."
-author: "Ian Gallina"
-license: "MIT"

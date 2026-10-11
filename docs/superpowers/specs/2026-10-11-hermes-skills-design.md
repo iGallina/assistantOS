@@ -6,9 +6,10 @@ and distribution. The AIS-OS skills ship with the product, designed for the prod
 
 ## Where things live
 
-- **The repo root is the Hermes distribution.** `hermes profile install github.com/iGallina/assistantOS` copies only
-  distribution-owned files into the profile: `distribution.yaml`, `SOUL.md`, `mcp.json`, `skills/`, `cron/`. The
-  Python core, installer and docs are not copied.
+- **`hermes/` is the Hermes distribution.** Measured on a runner: `hermes profile install` copies the *whole* source
+  folder into the profile (not only distribution-owned files, despite the docs), so the repo root would put `src/`,
+  tests and docs into every owner's profile. The installer installs from the local clone:
+  `hermes profile install <core>/hermes -y`; `hermes profile update` re-reads that folder after `aos update`.
 - **Owner data lives in the profile's `local/`** (Hermes never touches it on update, the same convention as our
   `local/`): `local/context/` (about-me, about-business, priorities, voice, connections, index), `local/brainstorms/`,
   `local/audits/`, `local/decisions.md`. `USER.md` (1,375-char limit) gets only a compact owner summary + pointers.

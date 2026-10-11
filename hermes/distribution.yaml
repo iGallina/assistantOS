@@ -1,0 +1,9 @@
+# assistantOS as a Hermes profile distribution. Installed from the local clone the Windows installer makes:
+#   hermes profile install <core>/hermes -y
+# This folder holds only distribution files because `hermes profile install` copies the whole folder into the profile.
+# The owner's data goes to the profile's local/, which Hermes never touches on update.
+name: assistantos
+version: 0.3.0
+description: "assistantOS: o assistente do dono de pequeno negócio — mostra o que precisa da sua decisão nas conversas que você escolher, com a resposta rascunhada. Nunca envia nada por você."
+author: "Ian Gallina"
+license: "MIT"

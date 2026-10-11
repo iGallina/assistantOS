@@ -1,11 +1,12 @@
-"""The repo root is a Hermes profile distribution: distribution.yaml, SOUL.md, skills/<name>/SKILL.md."""
+"""hermes/ is a Hermes profile distribution: distribution.yaml, SOUL.md, skills/<name>/SKILL.md. A subfolder, because
+`hermes profile install` copies the whole source folder into the profile (measured on a runner, 2026-10-11)."""
 import re
 from pathlib import Path
 
 import pytest
 import yaml
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[1] / "hermes"
 SKILLS = sorted(p.parent for p in (ROOT / "skills").glob("*/SKILL.md"))
 # kit-derived files keep the MIT notice (NOTICE); the "Three Ms of AI" name and branding are not used
 BANNED = re.compile(r"three ms|\b3ms\b|nate herk|herk|default shift|bike method|four cs|bike-method|three-ms", re.I)
