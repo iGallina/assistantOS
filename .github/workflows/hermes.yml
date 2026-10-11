@@ -1,0 +1,31 @@
+name: hermes
+# The repo root is a Hermes profile distribution. Install the real Hermes Agent on a clean runner, install this
+# distribution from the checkout, and check what an owner's profile gets. No model call, no credentials.
+on:
+  push:
+    paths: ["skills/**", "SOUL.md", "distribution.yaml", "mcp.json", "cron/**", ".github/workflows/hermes.yml"]
+  workflow_dispatch:
+jobs:
+  distribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Hermes Agent (official installer, non-interactive)
+        run: |
+          curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --non-interactive --skip-browser --skip-computer-use
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install this distribution
+        run: |
+          hermes --version
+          hermes profile install "$GITHUB_WORKSPACE" -y
+          hermes profile info assistantos
+      - name: Check the owner's profile
+        run: |
+          p="$HOME/.hermes/profiles/assistantos"
+          test -s "$p/SOUL.md" && test -s "$p/distribution.yaml"
+          for s in onboard grill-me link level-up; do test -s "$p/skills/$s/SKILL.md" || { echo "missing skill $s"; exit 1; }; done
+          for d in src install tests docs; do test ! -e "$p/$d" || { echo "$d leaked into the profile"; exit 1; }; done
+          hermes -p assistantos skills list | tee skills.txt
+          for s in onboard grill-me link level-up; do grep -q -w "$s" skills.txt || { echo "Hermes does not list $s"; exit 1; }; done
+          echo "profile ok: SOUL, manifest, 4 skills listed by Hermes, no source code copied"
