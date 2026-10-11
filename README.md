@@ -54,8 +54,9 @@ quiser e envia.
    **Executar assim mesmo**. O aviso aparece porque o instalador ainda não tem assinatura digital.
 
    O instalador não pede senha de administrador. Ele instala o Git, o Python (uv), o assistantOS, o Claude Code e o
-   Paseo, e agenda o assistente a cada 5 minutos. Leva de 5 a 15 minutos. No fim, fica um atalho **assistantOS** na
-   área de trabalho. Se parar no meio, rode de novo: ele continua de onde parou.
+   **Hermes** (o app onde você conversa com o seu assistente), e agenda o assistente a cada 5 minutos. Leva de 10 a 25
+   minutos. No fim, ficam os atalhos **assistantOS** e **Hermes** na área de trabalho. Se parar no meio, rode de novo:
+   ele continua de onde parou.
 
 2. **Os passos que só você pode fazer.** Por enquanto, eles usam o PowerShell (menu Iniciar → digite "PowerShell" →
    Enter). Primeiro, entre na pasta do assistente:
@@ -153,6 +154,20 @@ com **"Precisa de sessão"**. O relatório do dia traz um texto pronto para voc�
 Se você usa o Fizzy, cada conversa aberta vira um cartão no seu quadro, com o resumo. Fechar o cartão no celular é o
 mesmo que marcar **Feito**; apagar o cartão é **Ignorar**. Quem instala configura o quadro para você.
 
+## Conversar com o assistente (Hermes)
+
+Abra o **Hermes** pelo atalho da área de trabalho. Na primeira vez, ele pede para você conectar a sua assinatura de IA:
+siga as telas dele. O seu assistente já vem pronto lá dentro. Escreva:
+
+- **/onboard** — no primeiro dia: sete perguntas e ele passa a saber quem você é, o que você vende e como você escreve.
+- **/decidir** — todo dia: o que precisa de você agora, uma conversa por vez, com o resumo e a resposta rascunhada.
+- **/preparar-reuniao** — antes de uma reunião, uma folha de uma página; depois, o relatório para quem precisa.
+- **/level-up** — uma vez por semana: escolhe uma tarefa repetitiva e entrega uma melhoria pronta.
+- **/audit** — confere, com evidência, se está tudo funcionando.
+
+Também dá para só conversar: "o que eu preciso decidir hoje?", "anota onde fica a planilha de preços". Ele nunca envia
+nada em seu nome: rascunha, e quem envia é você.
+
 ## Relatório do dia
 
 Todo dia o assistente monta um relatório em `local\reports\` (um arquivo por dia). Para abrir o de hoje:
@@ -217,9 +232,11 @@ As novidades de cada versão estão em `CHANGELOG.md`.
   `aos update` busca as versões). Um repositório próprio do cliente só é preciso para mexer no núcleo: crie pelo
   botão **Use this template**, escolhendo **Private** (fork de repositório público é público).
 - **O instalador do Windows** (`assistantOS-Setup.exe`, Inno Setup, por usuário) roda `install\bootstrap.ps1` passo a
-  passo: MinGit e Paseo com versão fixa e SHA-256 conferido, uv e Claude Code pelos instaladores oficiais, o
-  repositório em `%LOCALAPPDATA%\assistantOS\core` com o remoto `upstream`, `uv sync --locked`, `aos setup`
-  (wacli, fizzy, bws em `local\bin`, configurações em `local\config`, passada agendada) e a página ligada no logon.
+  passo: MinGit com versão fixa e SHA-256 conferido; uv, Claude Code e Hermes (`install.ps1 -NonInteractive
+  -IncludeDesktop`) pelos instaladores oficiais; o repositório em `%LOCALAPPDATA%\assistantOS\core` com o remoto
+  `upstream`, `uv sync --locked`, `aos setup` (wacli, fizzy, bws em `local\bin`, configurações em `local\config`,
+  passada agendada); o perfil **assistantos** do Hermes (`hermes profile install core\hermes`, `AOS_HOME` no `.env` do
+  perfil, perfil padrão) e a página ligada no logon. `aos update` também atualiza o perfil do Hermes.
   Log: `%LOCALAPPDATA%\assistantOS\install.log`. Instalação silenciosa (suporte):
   `assistantOS-Setup.exe /VERYSILENT /SUPPRESSMSGBOXES`. No macOS: `install/install.sh` dentro de uma cópia do
   repositório.

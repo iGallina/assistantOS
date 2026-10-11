@@ -33,7 +33,7 @@ UninstallDisplayName=assistantOS
 Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 
 [Messages]
-pt.WelcomeLabel2=Vamos instalar o assistantOS e o que ele precisa: Git, Python (uv), Claude Code e Paseo.%n%nLeva de 5 a 15 minutos e não pede senha de administrador. Deixe o computador ligado e conectado à internet.
+pt.WelcomeLabel2=Vamos instalar o assistantOS e o que ele precisa: Git, Python (uv), Claude Code e o Hermes, o app onde você conversa com o seu assistente.%n%nLeva de 10 a 25 minutos e não pede senha de administrador. Deixe o computador ligado e conectado à internet.
 
 [Files]
 Source: "bootstrap.ps1"; DestDir: "{app}"; Flags: ignoreversion
@@ -46,7 +46,7 @@ Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Unregister-Schedu
 
 [Code]
 const
-  StepCount = 7;
+  StepCount = 8;
 var
   Failed: Boolean;
 
@@ -54,7 +54,7 @@ function StepName(I: Integer): String;
 begin
   case I of
     0: Result := 'git'; 1: Result := 'uv'; 2: Result := 'core'; 3: Result := 'claude';
-    4: Result := 'paseo'; 5: Result := 'setup'; 6: Result := 'page';
+    4: Result := 'hermes'; 5: Result := 'setup'; 6: Result := 'perfil'; 7: Result := 'page';
   end;
 end;
 
@@ -65,9 +65,10 @@ begin
     1: Result := 'Instalando o Python (uv)...';
     2: Result := 'Baixando o assistantOS...';
     3: Result := 'Instalando o Claude Code...';
-    4: Result := 'Instalando o Paseo (pode levar alguns minutos)...';
+    4: Result := 'Instalando o Hermes (o maior passo: pode levar uns 10 minutos)...';
     5: Result := 'Configurando o assistente (pode levar alguns minutos)...';
-    6: Result := 'Preparando a página...';
+    6: Result := 'Preparando o seu assistente no Hermes...';
+    7: Result := 'Preparando a página...';
   end;
 end;
 

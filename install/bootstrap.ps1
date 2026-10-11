@@ -1,12 +1,12 @@
 ﻿# assistantOS — everything the Windows installer does, for the current user only (no admin, no UAC prompt).
 # Run by the Inno Setup wizard (install/assistantOS.iss) one step at a time; also runnable by hand:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1 [-Step git,uv,core,claude,paseo,setup,page] [-Ref main]
+#   powershell -NoProfile -ExecutionPolicy Bypass -File bootstrap.ps1 [-Step git,uv,core,claude,hermes,setup,perfil,page] [-Ref main]
 # Every step is idempotent: running it again skips what is already in place. Log: %LOCALAPPDATA%\assistantOS\install.log
 # Downloads are pinned and checked against each project's published SHA-256; uv and Claude Code use their official
-# installers, as install.ps1 always did. Files fetched here carry no "downloaded from the internet" mark, so SmartScreen
-# never stops Paseo's unsigned installer.
+# installers, as install.ps1 always did, and so does Hermes. Files fetched here carry no "downloaded from the internet"
+# mark, so SmartScreen never stops them.
 param(
-    [string[]]$Step = @('git', 'uv', 'core', 'claude', 'paseo', 'setup', 'page'),
+    [string[]]$Step = @('git', 'uv', 'core', 'claude', 'hermes', 'setup', 'perfil', 'page'),
     [string]$Ref = ''   # a branch or tag to install instead of the newest release (testing only)
 )
 $ErrorActionPreference = 'Stop'
@@ -26,10 +26,6 @@ $Pins = @{
         x64   = @('https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.2/MinGit-2.56.0.2-64-bit.zip', 'da35e72aa21c005a5a0d298cfbae110bc1609a815730ea0dde84b01a1b3cd3be')
         arm64 = @('https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.2/MinGit-2.56.0.2-arm64.zip', '38b33dc6024026e3315cf88ab2cfea65205bbd7bb3a8e824bd21c8ad4fe609a7')
     }
-    paseo = @{
-        x64   = @('https://github.com/getpaseo/paseo/releases/download/v0.11.1/Paseo-Setup-0.11.1-x64.exe', 'f772b7c915d541f72e4c5129f30a09f9542f45c6803345c3fd3747d6143c71b6')
-        arm64 = @('https://github.com/getpaseo/paseo/releases/download/v0.11.1/Paseo-Setup-0.11.1-arm64.exe', '82720f9c51be65aa9c3e731769342cba1274be03aed326c403444957f59e4f0c')
-    }
 }
 New-Item -ItemType Directory -Force -Path $Base | Out-Null
 $Log = Join-Path $Base 'install.log'
@@ -42,11 +38,11 @@ function Run([string]$exe, [string[]]$argv) {
     Log "$exe $($argv -join ' ') -> exit $LASTEXITCODE`n$out"
     if ($LASTEXITCODE -ne 0) { throw "$exe $($argv[0]) falhou (código $LASTEXITCODE)" }
 }
-function RunInstaller([string]$url) {
+function RunInstaller([string]$url, [string[]]$extra = @()) {
     # official install scripts run in their own process: an `exit` inside them can't end this one, and their output is logged
     $f = Join-Path $env:TEMP ('aos-' + [guid]::NewGuid().ToString('N') + '.ps1')
     Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $f
-    try { Run 'powershell.exe' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $f) } finally { Remove-Item $f -Force -ErrorAction SilentlyContinue }
+    try { Run 'powershell.exe' (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $f) + $extra) } finally { Remove-Item $f -Force -ErrorAction SilentlyContinue }
 }
 function Fetch([string]$name) {
     $url, $sha = $Pins[$name][$Arch]
@@ -92,18 +88,30 @@ $steps = [ordered]@{
         RunInstaller 'https://claude.ai/install.ps1'
         if (-not (Has claude)) { throw 'Claude Code não ficou disponível' }
     }
-    paseo  = {
-        $exe = Join-Path $env:LOCALAPPDATA 'Programs\Paseo\Paseo.exe'
-        if (Test-Path $exe) { return }
-        $setup = Fetch paseo
-        $p = Start-Process -FilePath $setup -ArgumentList '/S', '/currentuser' -Wait -PassThru
-        Remove-Item $setup -Force
-        Log "paseo setup exit $($p.ExitCode)"
-        if (-not (Test-Path $exe)) { throw "o instalador do Paseo terminou sem instalar (código $($p.ExitCode))" }
+    hermes = {
+        if (Has hermes) { return }
+        # Hermes' official per-user installer (no admin): CLI, gateway and the desktop app with its shortcuts. The browser
+        # and computer-use tools stay off; the owner can add them later with `hermes pm install`.
+        RunInstaller 'https://hermes-agent.nousresearch.com/install.ps1' @('-NonInteractive', '-IncludeDesktop', '-SkipBrowser', '-SkipComputerUse')
+        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path   # Hermes adds itself to the user PATH
+        if (-not (Has hermes)) { throw 'o Hermes não ficou disponível' }
     }
     setup  = {
         Push-Location $Core
         try { Run uv @('sync', '--locked', '--quiet'); Run uv @('run', 'aos', 'setup') } finally { Pop-Location }
+    }
+    perfil = {
+        # the assistantOS distribution (skills, SOUL, MCP entry) as the owner's default Hermes profile
+        $listed = (& hermes profile list 2>&1 | Out-String) -match '\bassistantos\b'
+        if ($listed) { Run hermes @('profile', 'update', 'assistantos', '-y') }
+        else { Run hermes @('profile', 'install', (Join-Path $Core 'hermes'), '-y') }
+        $hhome = if ($env:HERMES_HOME) { $env:HERMES_HOME } else { Join-Path $env:LOCALAPPDATA 'hermes' }
+        $envFile = Join-Path $hhome 'profiles\assistantos\.env'
+        if (-not (Test-Path (Split-Path $envFile))) { throw "perfil do Hermes não encontrado em $(Split-Path $envFile)" }
+        # config.yaml's MCP entry reads ${AOS_HOME}: where assistantOS lives. UTF-8 without BOM, one line replaced.
+        $lines = @(Get-Content $envFile -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch '^AOS_HOME=' }) + "AOS_HOME=$Core"
+        [IO.File]::WriteAllLines($envFile, [string[]]$lines, (New-Object Text.UTF8Encoding $false))
+        Run hermes @('profile', 'use', 'assistantos')
     }
     page   = {
         # the page runs in the background from logon (pythonw: no console window); a desktop shortcut opens it
