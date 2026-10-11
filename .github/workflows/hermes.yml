@@ -1,0 +1,44 @@
+name: hermes
+# hermes/ is a Hermes profile distribution (a subfolder: install copies the whole source folder into the profile).
+# Install the real Hermes Agent on a clean runner, install the distribution from the checkout, and check what an
+# owner's profile gets. No model call, no credentials.
+on:
+  push:
+    paths: ["hermes/**", ".github/workflows/hermes.yml"]
+  workflow_dispatch:
+jobs:
+  distribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Install Hermes Agent (official installer, non-interactive)
+        run: |
+          curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash -s -- --non-interactive --skip-browser --skip-computer-use
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Install this distribution
+        run: |
+          hermes --version
+          hermes profile install "$GITHUB_WORKSPACE/hermes" -y
+          hermes profile info assistantos
+      - name: Check the owner's profile
+        run: |
+          p="$HOME/.hermes/profiles/assistantos"
+          test -s "$p/SOUL.md" && test -s "$p/distribution.yaml"
+          for s in onboard grill-me link level-up audit decidir preparar-reuniao agente-de-contato 3d-brain saude; do test -s "$p/skills/$s/SKILL.md" || { echo "missing skill $s"; exit 1; }; done
+          for d in src install tests docs hermes pyproject.toml; do test ! -e "$p/$d" || { echo "$d leaked into the profile"; exit 1; }; done
+          ls -A "$p"
+          hermes -p assistantos skills list | tee skills.txt
+          for s in onboard grill-me link level-up audit decidir preparar-reuniao agente-de-contato 3d-brain saude; do grep -q -w "$s" skills.txt || { echo "Hermes does not list $s"; exit 1; }; done
+          echo "profile ok: SOUL, manifest, 10 skills listed by Hermes, no source code copied"
+      - name: Hermes connects to aos mcp and sees its tools
+        env:
+          AOS_HOME: ${{ github.workspace }}
+        run: |
+          hermes -p assistantos mcp list
+          hermes -p assistantos mcp test assistantos | tee mcp.txt
+          for t in o_que_decidir listar_itens ver_conversa marcar salvar_rascunho relatorio_do_dia; do grep -q "$t" mcp.txt || { echo "Hermes does not see tool $t"; exit 1; }; done
+          if grep -i -E "send|envi" mcp.txt | grep -v -i "nunca envi\|never send\|não envia"; then echo "a send-like tool is exposed"; exit 1; fi
+          echo "Hermes reaches assistantOS over MCP: 6 tools, none that sends"

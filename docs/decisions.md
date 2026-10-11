@@ -117,3 +117,16 @@ Question (Ian): do we need LangChain and LangGraph, given agents must carry the 
 ## 2026-10-03 — Lessons from the build
 
 - **Measure the anonymizer on real data** (2026-10-03). The labelled patterns (phones, CPF/CNPJ, cards, keys, e-mails, WhatsApp ids) passed every unit test and still let 1,053 runs of 8+ digits through on a real 47k-message store: unformatted CPFs, CEPs, phones without area code, order numbers, ids glued to letters. Fix: protect real dates/times, then mask any remaining 8+ digit run → 0 left, dates kept. Re-run the measurement whenever a pattern changes.
+
+## 2026-10-11 — Hermes, skills, and the one exception to "nothing sends without a click" (Ian)
+
+- **Hermes Agent + Hermes Desktop replace Paseo.** The sweep stays in our Python and reaches Hermes over MCP
+  (`aos mcp`: read, draft, mark — no send tool); Hermes owns the model/subscription, chat, phone gateway, skills and
+  the distribution (`hermes/`). The AIS-OS skills ship as product skills there.
+- **Exception: `agente-de-contato` phase 2.** The product rule stays "nothing is sent on the owner's behalf without
+  their click". In phase 1 every reply to the contact waits for the owner's explicit "ok" (that is the click). Phase 2
+  — answering *allowed topics* directly — is a deliberate exception, allowed only when: one configured contact,
+  allowlisted topics, answers only from the given sources, the owner turns it on explicitly per contact after a week
+  of mostly unedited approvals, and one message from the owner returns it to phase 1. Everything outside the
+  allowlist still goes to the owner. Reason: phase 2 is where the agent actually saves the owner's time; the blast
+  radius stays one contact and a closed list of topics.

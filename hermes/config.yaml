@@ -1,0 +1,7 @@
+# assistantOS profile defaults. Hermes keeps this file on update (the owner may have chosen a model), so it holds only
+# what the profile needs to work: the assistantOS MCP server. ${AOS_HOME} is the assistantOS core folder; the installer
+# sets it in the profile's .env (Windows: %LOCALAPPDATA%\assistantOS\core).
+mcp_servers:
+  assistantos:
+    command: "uv"
+    args: ["run", "--project", "${AOS_HOME}", "aos", "mcp", "--home", "${AOS_HOME}"]
