@@ -3,6 +3,16 @@
 Versões marcadas com tags `vX.Y.Z`. `aos update` instala a mais nova; mudanças no banco rodam sozinhas (migrações
 numeradas) e uma versão que falha no teste é desfeita.
 
+## v0.3.0 — 2026-10-11
+
+- **O seu assistente agora mora no Hermes** (Hermes Agent + Hermes Desktop), no lugar do Paseo. O instalador instala o
+  Hermes e já deixa o assistente pronto lá dentro, como perfil padrão.
+- **As skills do AIS-OS vêm junto**: `/onboard`, `/decidir`, `/preparar-reuniao`, `/level-up`, `/audit`, `/grill-me`,
+  `/link`, `/agente-de-contato`, `/3d-brain`, `/saude`.
+- **`aos mcp`**: o Hermes lê o que precisa da sua decisão, rascunha e marca pelo assistantOS. Não existe ferramenta de
+  envio: quem envia é sempre você.
+- `aos update` também atualiza as skills no Hermes.
+
 ## v0.2.0 — 2026-10-09
 
 - **Instalador para Windows** (`assistantOS-Setup.exe`): dois cliques, sem terminal e sem senha de administrador.

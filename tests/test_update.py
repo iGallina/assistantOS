@@ -75,3 +75,31 @@ def test_refuses_edited_code_and_names_a_missing_upstream(tmp_path):
     git(home, "remote", "remove", "upstream")
     rc, msg = update(home, self_test=ok)
     assert rc == 1 and "git remote add upstream" in msg
+
+
+def test_a_successful_update_refreshes_the_hermes_profile(tmp_path, monkeypatch):
+    """New skills reach the owner's Hermes only through `hermes profile update` (it re-reads core/hermes/)."""
+    import os
+    import stat
+    import sys
+    up, home = setup(tmp_path)
+    release(up, "v0.2.0")
+    calls = tmp_path / "hermes-calls.txt"
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    if sys.platform == "win32":
+        (bindir / "hermes.cmd").write_text(f'@echo %* >> "{calls}"\n')
+    else:
+        exe = bindir / "hermes"
+        exe.write_text(f'#!/bin/sh\necho "$@" >> "{calls}"\n')
+        exe.chmod(exe.stat().st_mode | stat.S_IEXEC)
+    monkeypatch.setenv("PATH", str(bindir) + os.pathsep + os.environ["PATH"])
+    rc, msg = update(home, self_test=ok)
+    assert rc == 0 and calls.read_text().split() == ["profile", "update", "assistantos", "-y"]
+
+
+def test_update_without_hermes_still_succeeds(tmp_path, monkeypatch):
+    up, home = setup(tmp_path)
+    release(up, "v0.2.0")
+    monkeypatch.setattr("assistantos.update.shutil.which", lambda name: None if name == "hermes" else "/usr/bin/" + name)
+    assert update(home, self_test=ok)[0] == 0

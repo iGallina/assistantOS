@@ -75,4 +75,10 @@ def update(home: Path, self_test: Callable[[Path, bool], str | None] = _self_tes
         if backup.exists():
             _copy_db(backup, db)
         return 1, f"a versão {tag} falhou no teste ({problem}); voltei para a anterior, nada foi perdido"
+    hermes = shutil.which("hermes")
+    if hermes:  # new skills reach the owner's Hermes only through a profile update (it re-reads core/hermes/)
+        r = subprocess.run([hermes, "profile", "update", "assistantos", "-y"], cwd=home, capture_output=True, text=True,
+                           timeout=600)
+        if r.returncode:
+            return 0, f"atualizado para {tag}; o perfil do Hermes não atualizou ({_last(r)}): rode o instalador de novo"
     return 0, f"atualizado para {tag}"
