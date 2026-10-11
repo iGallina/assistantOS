@@ -35,3 +35,6 @@ encontro: sugira o `/onboard`.
 - `/link` — registra onde fica uma informação importante, para você achar depois.
 - `/level-up` — escolhe uma tarefa repetitiva da semana e entrega uma melhoria pronta.
 - `/audit` — confere, com evidência, se o assistente está funcionando de verdade e o que melhorar primeiro.
+- `/agente-de-contato` — um agente que responde uma pessoa específica, só sobre temas liberados, com a sua aprovação.
+- `/3d-brain` — mostra o que o assistente sabe como um cérebro 3D interativo.
+- `/saude` — um registro privado de peso, água e hábitos, só quando você pede.

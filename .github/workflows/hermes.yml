@@ -27,12 +27,12 @@ jobs:
         run: |
           p="$HOME/.hermes/profiles/assistantos"
           test -s "$p/SOUL.md" && test -s "$p/distribution.yaml"
-          for s in onboard grill-me link level-up audit decidir preparar-reuniao; do test -s "$p/skills/$s/SKILL.md" || { echo "missing skill $s"; exit 1; }; done
+          for s in onboard grill-me link level-up audit decidir preparar-reuniao agente-de-contato 3d-brain saude; do test -s "$p/skills/$s/SKILL.md" || { echo "missing skill $s"; exit 1; }; done
           for d in src install tests docs hermes pyproject.toml; do test ! -e "$p/$d" || { echo "$d leaked into the profile"; exit 1; }; done
           ls -A "$p"
           hermes -p assistantos skills list | tee skills.txt
-          for s in onboard grill-me link level-up audit decidir preparar-reuniao; do grep -q -w "$s" skills.txt || { echo "Hermes does not list $s"; exit 1; }; done
-          echo "profile ok: SOUL, manifest, 7 skills listed by Hermes, no source code copied"
+          for s in onboard grill-me link level-up audit decidir preparar-reuniao agente-de-contato 3d-brain saude; do grep -q -w "$s" skills.txt || { echo "Hermes does not list $s"; exit 1; }; done
+          echo "profile ok: SOUL, manifest, 10 skills listed by Hermes, no source code copied"
       - name: Hermes connects to aos mcp and sees its tools
         env:
           AOS_HOME: ${{ github.workspace }}

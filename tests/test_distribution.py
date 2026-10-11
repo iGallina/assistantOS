@@ -26,7 +26,7 @@ def test_manifest_and_soul():
 
 
 def test_there_are_skills():
-    assert {"onboard", "grill-me", "link", "level-up", "audit", "decidir", "preparar-reuniao"} <= {p.name for p in SKILLS}
+    assert {"onboard", "grill-me", "link", "level-up", "audit", "decidir", "preparar-reuniao", "agente-de-contato", "3d-brain", "saude"} <= {p.name for p in SKILLS}
 
 
 @pytest.mark.parametrize("skill", SKILLS, ids=lambda p: p.name)
