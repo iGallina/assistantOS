@@ -58,6 +58,11 @@ function AddUserPath([string]$dir) {
     if (-not (($user -split ';') -contains $dir)) { [Environment]::SetEnvironmentVariable('Path', "$dir;$user", 'User') }
     if (-not (($env:Path -split ';') -contains $dir)) { $env:Path = "$dir;$env:Path" }
 }
+# Each step is its own process, started by the wizard before earlier steps changed the user PATH (Hermes adds
+# %LOCALAPPDATA%\hermes\bin). Read the user PATH back so every step, and a re-run, sees what is already installed.
+foreach ($dir in ([Environment]::GetEnvironmentVariable('Path', 'User') -split ';')) {
+    if ($dir -and -not (($env:Path -split ';') -contains $dir)) { $env:Path = "$env:Path;$dir" }
+}
 AddUserPath (Join-Path $env:USERPROFILE '.local\bin')   # where uv and Claude Code install themselves
 if (Test-Path (Join-Path $Base 'git\cmd')) { AddUserPath (Join-Path $Base 'git\cmd') }
 
@@ -93,7 +98,7 @@ $steps = [ordered]@{
         # Hermes' official per-user installer (no admin): CLI, gateway and the desktop app with its shortcuts. The browser
         # and computer-use tools stay off; the owner can add them later with `hermes pm install`.
         RunInstaller 'https://hermes-agent.nousresearch.com/install.ps1' @('-NonInteractive', '-IncludeDesktop', '-SkipBrowser', '-SkipComputerUse')
-        $env:Path = [Environment]::GetEnvironmentVariable('Path', 'User') + ';' + $env:Path   # Hermes adds itself to the user PATH
+        AddUserPath (Join-Path $env:LOCALAPPDATA 'hermes\bin')   # where Hermes publishes the hermes command
         if (-not (Has hermes)) { throw 'o Hermes não ficou disponível' }
     }
     setup  = {

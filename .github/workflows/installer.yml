@@ -60,7 +60,7 @@ jobs:
           while (-not $p.HasExited -and (Get-Date) -lt $deadline) {
             Start-Sleep 10
             $lines = @(Get-Content $log -ErrorAction SilentlyContinue | Select-String ' == ')
-            $lines[$seen..($lines.Count - 1)] | Where-Object { $_ } | ForEach-Object { $_.Line }; $seen = $lines.Count
+            if ($lines.Count -gt $seen) { $lines[$seen..($lines.Count - 1)] | ForEach-Object { $_.Line }; $seen = $lines.Count }
           }
           if (-not $p.HasExited) {
             '--- setup.log (Inno)'; Get-Content setup.log -Tail 60 -ErrorAction SilentlyContinue
