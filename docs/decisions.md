@@ -130,3 +130,13 @@ Question (Ian): do we need LangChain and LangGraph, given agents must carry the 
   of mostly unedited approvals, and one message from the owner returns it to phase 1. Everything outside the
   allowlist still goes to the owner. Reason: phase 2 is where the agent actually saves the owner's time; the blast
   radius stays one contact and a closed list of topics.
+
+## 2026-10-13 — Enso Method replaces Superpowers (Ian)
+
+- **Every piece of work now runs through the Enso Method** (`EnsoDynamics/enso-method`, enabled for this repo in
+  `.claude/settings.json`): PRD → autonomous refinement → the owner's review → technical design → phased build, with
+  the business assumptions in an `assumptions.md` beside each PRD. It replaces Superpowers (decision 5 of 2026-09-28);
+  the Karpathy principles stay the coding motto. Reason: one method per repo, so a session never has to choose; the
+  Enso Method adds what the build lacked, testable acceptance criteria the owner signs off before code.
+- New work lives in `docs/prds/` (or `docs/changes/` for a bounded change). The earlier specs and plans stay in
+  `docs/superpowers/` as they are. First PRD: `docs/prds/first-run-without-terminal/`.

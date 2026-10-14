@@ -21,12 +21,12 @@ Born from Ian Gallina's personal AIOS (`~/Projetos/AIS-OS`, private), which runs
 | Updates | `core/` (replaced on update) vs `local/` (owner's scripts + config, never touched); tagged releases + changelog + numbered migrations + self-test + rollback, via an `update` skill |
 | Privacy | Runs on the user's own computer, no server of ours: data protection is the user's responsibility; the docs say so plainly |
 | Costs | A skill estimates and reports what the whole setup costs per day by provider; the daily report shows spend |
-| Coding | Superpowers (brainstorm → plan → deterministic implementation) under the Karpathy principles for every script |
+| Coding | Enso Method (PRD → refinement → technical design → phased build; plugin `enso-method`, enabled in `.claude/settings.json`) under the Karpathy principles for every script. Replaced Superpowers 2026-10-13 |
 | Surfaces | Fizzy = the kanban and visual feedback; a daily HTML report proposes the next best prompts |
 
 ## Where things live
 
-- `src/assistantos/` — the core package (`aos` CLI); tests in `tests/`, run `uv run pytest`; CI on Windows + macOS (`.github/workflows/ci.yml`). Design: `docs/superpowers/specs/`, plans: `docs/superpowers/plans/`.
+- `src/assistantos/` — the core package (`aos` CLI); tests in `tests/`, run `uv run pytest`; CI on Windows + macOS (`.github/workflows/ci.yml`). New work: `docs/prds/{name}/` (PRD, assumptions, technical design, phases), or `docs/changes/{name}/` for a bounded change; start with the `using-the-enso-method` skill. Earlier specs and plans stay in `docs/superpowers/`.
 - `docs/vision.md` — who, why, the wedge, the model.
 - `docs/decisions.md` — append-only decisions + lessons carried from AIS-OS.
 - `docs/engine-inventory.md` — every AIS-OS component: portable / macOS-bound / Ian-specific, and its Windows plan.
