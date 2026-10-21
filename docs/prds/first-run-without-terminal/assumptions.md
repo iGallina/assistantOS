@@ -15,7 +15,7 @@
      Gaps in numbering (e.g., DATA-001, DATA-003) are expected
      when assumptions are validated and moved. NEVER close gaps. -->
 
-**Last Updated**: 2026-10-13
+**Last Updated**: 2026-10-21
 **Status**: DRAFT - Pending business validation
 
 **Document Purpose**: This document lists the business assumptions we're making to proceed with the
@@ -41,68 +41,6 @@ by whoever installs.
 - [ ] Wrong — different approach: _______________
 
 **Confidence**: 80% | **Impact if Wrong**: 🟡 MEDIUM
-
-### SCOPE-002. Connect only Claude in setup, leaving a switch to ChatGPT as a support step?
-
-**Assumption**: Setup connects **Claude only**, the subscription the installer sets up. An owner who pays for
-**ChatGPT** instead still needs whoever installs to switch the installation to it, **sign-in included**, as today. That
-owner does not finish setup alone in this release. On a switched installation, setup's AI step shows as done when
-ChatGPT answers its test request.
-
-**Evidence**: The Windows installer offers **no choice of AI**: its welcome screen and its steps name Claude Code only.
-Today ChatGPT is a support step after install: change a setting, install the Codex CLI, sign in with `codex login`
-(README, "Codex em vez de Claude"). Codex sign-in on Windows is **not proven** yet
-(`docs/spikes/2026-09-29-windows-stack.md`). The first real install used Claude.
-
-Against it: the README promises a Claude **or** ChatGPT subscription works, and `docs/decisions.md` (2026-09-29) has
-each customer bring Claude, ChatGPT or Gemini. Offering ChatGPT here adds a choice to the installer, a Codex install
-and a second sign-in in setup, each to be proven on Windows first.
-
-**Confirm or Correct**:
-- [ ] Correct — Claude only in this release; ChatGPT stays a support step
-- [ ] Wrong — an owner who pays for ChatGPT must also finish setup without a terminal in this release
-- [ ] Wrong — different approach: _______________
-
-**Confidence**: 65% | **Impact if Wrong**: 🔴 HIGH
-
----
-
-## Sign-in Assumptions
-
-### AUTH-001. Accept that an owner signs in to the AI twice, once in Hermes and once for the background summaries?
-
-**Assumption**: For now, the owner connects an AI subscription **twice**. The first time is in the first-launch
-screens of Hermes (the chat app installed alongside assistantOS, where the owner talks to the assistant). The second
-is in assistantOS setup, for the summaries and drafts the assistant prepares every 5 minutes (Claude, SCOPE-002). An
-owner whose Hermes also uses Claude signs in to the same Claude account both times.
-
-**Evidence**: The stakeholder's decision of 2026-10-11 (`docs/decisions.md`), whole: "The sweep stays in our Python and
-reaches Hermes over MCP (`aos mcp`: read, draft, mark — no send tool); Hermes owns the model/subscription, chat, phone
-gateway, skills and the distribution (`hermes/`)."
-
-It can be read two ways. **Chat only**, as its first clause suggests and as the installer read it that same day:
-updated for Hermes, it still sets up Claude Code for the summaries on its **own, separate sign-in**.
-
-Against it: the same sentence **can be read to** cover **everything**, summaries included (the first Wrong option). The
-2026-10-08 debrief's "Hermes handles subscription, not our business" fits either reading.
-
-One sign-in would mean running the pass through Hermes's one-shot mode. By default that mode loads the assistant's
-**tools, memory and rules** and **skips approvals**. Hermes has options to limit a run's tools and to skip its rules and
-memory, but whether they reach **zero tools** is **not verified**. Our code checks the shape of every answer whatever
-runs it; Hermes's free-form answers may only fail that check more often.
-
-Today the pass gives the AI **no tools**. One sign-in first needs proof that a Hermes run also gets **zero tools**,
-checked from the run's record (`docs/decisions.md`, 2026-09-28: "Confine agents with `--tools`, not
-`--allowedTools`").
-
-We still propose two sign-ins **until one is proven confined**.
-
-**Confirm or Correct**:
-- [ ] Correct — two sign-ins are acceptable for now
-- [ ] Wrong — one sign-in only: the background summaries must use whatever Hermes is connected to
-- [ ] Wrong — different approach: _______________
-
-**Confidence**: 50% | **Impact if Wrong**: 🔴 HIGH
 
 ---
 
@@ -184,3 +122,5 @@ through the same list, show every conversation the assistant has ever read, what
 
 | ID | Assumption | Validated | Notes |
 |----|------------|-----------|-------|
+| SCOPE-002 | Setup connects **Claude only**; switching an installation to ChatGPT stays a support step by whoever installs, sign-in included | ✅ 2026-10-21 | Per the stakeholder (2026-10-21): "quem instala troca a instalação para o ChatGPT à mão, login incluído". In the PRD: Summary, AC-SETUP-02, AC-STATUS-01, Out of Scope |
+| AUTH-001 | The owner signs in to the AI **twice** for now: in Hermes's first launch and in assistantOS setup for the summaries | ✅ 2026-10-20 | Per the stakeholder (2026-10-20): two sign-ins for now; one sign-in through Hermes's one-shot mode waits for a VM spike proving the run gets zero tools. In the PRD: Out of Scope, "Hermes's own first launch" |

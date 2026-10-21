@@ -133,7 +133,8 @@ need a decision and keeps everything else one click away.
 ## Out of Scope
 
 - **Hermes's own first launch.** Hermes, the chat app installed alongside assistantOS where the owner talks to the
-  assistant, asks the owner to connect its AI subscription on its own screens. This PRD does not change that.
+  assistant, asks the owner to connect its AI subscription on its own screens. This PRD does not change that, so the
+  owner signs in to the AI twice: there, and in setup for the summaries (AUTH-001, validated 2026-10-20).
 - **macOS.** Setup through screens is not promised or tested on a Mac; a Mac setup keeps today's steps (SCOPE-001).
 - **The phone surface (Fizzy).**
 - **Signing the installer.** The Windows SmartScreen warning stays.

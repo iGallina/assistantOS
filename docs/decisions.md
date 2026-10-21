@@ -140,3 +140,11 @@ Question (Ian): do we need LangChain and LangGraph, given agents must carry the 
   Enso Method adds what the build lacked, testable acceptance criteria the owner signs off before code.
 - New work lives in `docs/prds/` (or `docs/changes/` for a bounded change). The earlier specs and plans stay in
   `docs/superpowers/` as they are. First PRD: `docs/prds/first-run-without-terminal/`.
+
+## 2026-10-21 — First-run PRDs approved (Ian)
+
+- **Both PRDs signed off**: `docs/prds/first-run-without-terminal/` and `docs/changes/page-refuses-other-websites/`.
+  Technical design and build may start.
+- **SCOPE-002**: setup connects Claude only; switching to ChatGPT stays a support step, sign-in included.
+- **AUTH-001** (2026-10-20): two AI sign-ins for now (Hermes, and setup for the summaries). One sign-in through
+  Hermes's one-shot mode waits for a VM spike proving the run loads zero tools.
