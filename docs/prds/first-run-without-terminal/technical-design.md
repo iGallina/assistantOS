@@ -54,6 +54,8 @@ Three pieces, all inside the existing Python package and the page server that al
 | What "works now" means per step | ai: the configured AI answers a test request. whatsapp: wacli's read-only auth status reports linked, and the store can be read. owner: a name was saved from setup (the example file's placeholder never counts). chats: at least one ticked. check: all four checks pass | Each is cheap and checked when its screen opens; only the AI test costs a model call, and only when the owner asks for it |
 | Installs from before this change | No inferred progress. The page shows "setup not finished" until the owner clicks through setup once; each already-working step turns done as soon as its screen opens | One install exists today. Inferring progress from files means guessing; clicking through costs the owner a minute |
 | Long-running sign-ins | The page server starts the CLI with a fixed argument list, reads its output on a thread, and keeps one job per kind (`ai`, `whatsapp`) in memory. Starting again ends the previous job; a job still waiting after 10 minutes is ended and shown as failed. The AI test request has a 2-minute limit. The screens poll every 2 s | No queue or daemon, and no process left behind by an owner who walked away. A job lost when the page server restarts is restarted with one click; finished sign-ins are on disk with each CLI |
+| Child processes on Windows | The page server runs windowless (`pythonw`), so every program it starts (both sign-ins, wacli's status, the AI test request) is started with no console window (`CREATE_NO_WINDOW`). A sign-in left running by a page restart (an update, a logoff) is accepted: the new page server does not know it; a leftover `wacli auth` holds the store lock until it exits, which setup shows as `wa_busy` | Without the flag, Windows opens a console window for each console program a windowless process starts: a black window on the owner's screen at every step. Tying children to the page server's life (a job object) costs more code than the rare leftover costs the owner |
+| What the sign-ins never write | The QR payload and a code the owner pastes are kept only in the job's memory: never in `errors.log`, the store or any other file. A failed sign-in logs only wacli's `error` event text or the CLI's exit code | The pairing code is what AC-SETUP-08 protects from other devices and websites; a copy on disk is one more place to read it, and `aos bug-report` attaches `errors.log` |
 ### The two sign-ins
 
 | Decision | Choice | Rationale |
@@ -61,7 +63,7 @@ Three pieces, all inside the existing Python package and the page server that al
 | WhatsApp pairing (AC-SETUP-03) | `wacli auth --qr-format text --events --idle-exit 30s --store <whatsapp.json store dir>`. Each `qr_code` event on its stderr replaces the QR; the server turns the payload into an SVG with `segno`. Done when `wacli --read-only --json auth status` reports `authenticated`; the phone number shown is its `phone` | Both flags exist in the pinned v0.19.0 and are wacli's documented way to feed an external renderer. With `--read-only`, status reads the session file without taking the store lock, so it answers while `auth` is still running. WhatsApp rotates the code; polling picks up the new one |
 | Nothing sent while connecting (AC-SETUP-04) | Setup runs only `wacli auth …` and `wacli --read-only --json auth status`; the conversation list is read from the store file read-only. A test asserts every wacli command setup can start against that allowlist | Pairing adds the linked device; nothing else in that list writes to WhatsApp. The read-only file access is the one the pass already uses |
 | Passkey or pairing errors | wacli's `error` event becomes a problem code (below) with one next step ("Tente de novo e escaneie em até 1 minuto", or contact whoever installed) | AC-SETUP-07: no raw output on screen |
-| AI sign-in (AC-SETUP-02) | `claude auth login --claudeai`. Any `https://` link the CLI prints is shown as a button; if the CLI asks for a code, a field sends the pasted code to its input. Status from `claude auth status --json`. The step is done only when a test request through the installation's backend returns a valid answer | Covers both ways the CLI can finish (the browser returning to it, or a code to paste); spike S1 says which happens from a windowless process. The test request is the PRD's definition of done |
+| AI sign-in (AC-SETUP-02) | `claude auth login`. Any `https://` link the CLI prints is shown as a button; if the CLI asks for a code, a field sends the pasted code to its input. Status from `claude auth status`: JSON by default, exit code 0 when signed in, `authMethod` `claude.ai` for a subscription. The step is done only when a test request through the installation's backend returns a valid answer | Covers both ways the CLI can finish (the browser returning to it, or a code to paste); spike S1 says which happens from a windowless process. Only documented forms: the CLI reference lists `--console` as the way out of the subscription sign-in (the default) and `--text` as the way out of JSON status, so no flag is needed for either. The test request is the PRD's definition of done |
 | Installation switched to ChatGPT (SCOPE-002) | When `backend.json` is not `claude`, the AI step shows no sign-in, only the test request; a failure sends the owner to whoever installed | Switching and its sign-in are a support step |
 
 ### Who the owner is
@@ -75,10 +77,11 @@ Three pieces, all inside the existing Python package and the page server that al
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| The list (AC-CHATS-01, AC-CHATS-03) | Read from the wacli store, read-only: people and groups only (no broadcast, newsletter, status, or the owner's own chat), name from the chat, else the contact's saved name, else the number formatted as a phone; newest activity first. Search filters in the browser. Ticks come from `whatsapp.json`, so after setup the same screen, reached from "Configuração", shows the current choices | Same access path as the pass, and it works while the pairing's first sync still holds wacli's lock. The pinned v0.19.0 schema has every column used: `chats` (`jid`, `kind`, `name`, `last_message_ts`) and `contacts` (`full_name`, `push_name`, `business_name`, `phone`). Hundreds of names are small to send whole |
+| The list (AC-CHATS-01, AC-CHATS-03) | Read from the wacli store, read-only: people and groups only (`kind` `dm` or `group`; no broadcast, newsletter, status, or the owner's own chat), name from the chat, else the contact's saved name, else, for a phone id (`@s.whatsapp.net`), the number formatted as a phone, else a neutral "Contato sem nome" (a hidden id, `@lid`, is not a phone number); newest activity first. Search filters in the browser. Ticks come from `whatsapp.json`, so after setup the same screen, reached from "Configuração", shows the current choices | Same access path as the pass, and it works while the pairing's first sync still holds wacli's lock. The pinned v0.19.0 schema has every column used: `chats` (`jid`, `kind`, `name`, `last_message_ts`) and `contacts` (`full_name`, `push_name`, `business_name`, `phone`). Hundreds of names are small to send whole |
 | "Still bringing names in" | Shown while the pairing job is still syncing, or while the store's chat count changed in the last 30 s; the list refreshes on each poll | Names arrive after pairing in the first sync; both signals are local and cheap |
-| Who is followed (AC-CHATS-02, UI-004) | At the end of collecting, each pass writes the followed conversation ids to `meta` `followed`. `build_state` keeps only those; until a pass has written it, everything shows as today. The pass also briefs only followed conversations; a request the owner already made on one stays answered | Applies "from the next pass", as the PRD says. The page and `aos mcp` both use `build_state`, so they list the same conversations. Today the pass briefs every conversation in the store, so an unticked one could still cost model calls. Nothing is deleted, so re-ticking brings marks, briefs and drafts back |
+| Who is followed (AC-CHATS-02, UI-004) | When collecting finishes, each pass writes to `meta` `followed` the item ids every plugin's poll returned; a pass that stops during collecting leaves the previous list. `build_state` keeps only those; until a pass has written it, everything shows as today. The pass also briefs only followed conversations; a request the owner already made on one stays answered | Applies "from the next pass", as the PRD says. The page and `aos mcp` both use `build_state`, so they list the same conversations. Today the pass briefs every conversation in the store, so an unticked one could still cost model calls. Nothing is deleted, so re-ticking brings marks, briefs and drafts back |
 | A newly ticked conversation | Its first pass reads it back to the plugin's floor window (7 days) instead of from the shared cursor | Today a conversation added after the first pass gets nothing older than the last pass, so the first look would be empty. Duplicates are already ignored by message id |
+| A ticked conversation wacli no longer has | A ticked id missing from wacli's `chats` is the problem `wa_chat_gone` (fixed on the conversations screen), reported by the pass and by the final check | wacli v0.19.0 moves a chat from its hidden id (`@lid`) to its phone id when it learns the number (`MigrateLIDToPN`: the new row is inserted, the old one deleted). A tick on the old id would then read nothing, with no error, against AC-CHATS-02. The owner ticks it again under the same name |
 | Suggestion (AC-CHATS-04) | A line above the list; no limit on the number ticked | Copy, not a rule |
 
 ### Status and problems
@@ -86,7 +89,7 @@ Three pieces, all inside the existing Python package and the page server that al
 | Decision | Choice | Rationale |
 |---|---|---|
 | Pass record (AC-STATUS-02) | Every `aos run`, including one that stops on a configuration problem or crashes (problem `unknown`), writes `meta` `pass:last` (below). The page words the time in the owner's time zone: today "às 14:35", yesterday "ontem às 22:10", otherwise the date | The page can only say when the last look happened if every pass, failed or not, leaves a record |
-| First look done (AC-PAGE-03) | A pass is caught up when it read every followed conversation and the per-pass and per-day limits left no brief undone. `pass:first_look` is the time of the first caught-up pass; ticking a new conversation clears it | "Nada esperando você agora" must not show while briefs are still waiting their turn |
+| First look done (AC-PAGE-03) | A pass is caught up when it read every followed conversation and the per-pass and per-day limits left no brief undone. Each caught-up pass writes `pass:looked`, the ids it followed. The first look is done when every conversation ticked in `whatsapp.json` is in `pass:looked`. Only the pass writes the key | "Nada esperando você agora" must not show while briefs are still waiting their turn. Comparing with the ticks themselves, not clearing a flag when the owner ticks, means a pass that started before the tick cannot mark the new conversation as looked at, and a support person's hand edit counts too |
 | Next look | Last pass time + the pass interval (5 min), one constant shared with the scheduler | The page says when the assistant will look again without asking Task Scheduler |
 | Problems (AC-SETUP-07) | Errors become a problem code where they arise; one catalog in the locale files maps each code to a message and its one next step, plus the setup step that fixes it, if any. The raw text still goes to `errors.log` for `aos bug-report` | One place to write owner-facing text in both languages. The backend recognizes a signed-out CLI by its message, as it already does for usage limits |
 | Final check (AC-STATUS-01) | Runs the four checks of the PRD's table, each returning working or a problem code | Same codes and messages as a failed pass |
@@ -98,13 +101,15 @@ Three pieces, all inside the existing Python package and the page server that al
 | First screen (AC-PAGE-01, 02) | A row of five section tabs with counts; "Decidir agora" selected on every open (UI-003); the selected section's list below | One click reaches each section and the counts are always visible |
 | Each conversation (AC-PAGE-04) | Closed: name, why it is on the list, newest draft, up to three actions (UI-002), and what the PRD's table adds. "Mais opções" opens the rest: full summary, conversation, other actions, "Pedir ao assistente" | The PRD's table, as written |
 | Why it is on the list | A reason code from the status: replied after the owner's mark, wait ran out, summary ready | Computed in `build_state` from data it already has |
-| Newest draft (AC-PAGE-05) | The later of the summary's draft and the last draft written on request; out of date when written before the conversation's last message. "Copiar rascunho" copies it | One draft on the first screen, and it is always the latest |
+| Newest draft (AC-PAGE-05) | The later, by the time each was written, of the summary's draft and the last draft written on request. The summary's draft is out of date exactly when the summary is (it does not cover the last message); a draft written on request is out of date when written before the last message's time. "Copiar rascunho" copies it | One draft on the first screen, and it is always the latest. The summary and its draft never disagree about being out of date. A draft on request records no coverage, so a message that reaches the store after the draft but carries an earlier time is the one case it misses |
 | Setup unfinished (AC-STATUS-03) | `state.setup.next_step` set → the first screen shows "setup not finished" with a link to that step, in place of the empty-list message and the last-check line | The page reads progress from the same `meta` keys setup writes |
 
 ## Interfaces
 
-All routes are on the page server and behind its origin guard. Every `POST` answers `{"ok": true}` or
-`{"problem": "<code>"}` unless shown otherwise.
+All routes are on the page server and behind its origin guard. Every `POST` answers `200` with `{"ok": true}` or
+`{"problem": "<code>"}` unless shown otherwise; a body that fails validation (an empty name, an unknown time zone, a
+conversation id wacli does not have) answers `400` with `{"problem": "invalid_input", "field": "<name>"}`, and the
+screen marks that field. `GET /api/setup/chats` answers `{"problem": "wa_unlinked"}` while WhatsApp is not linked.
 
 ```
 GET  /setup                      setup screens (HTML)
@@ -144,7 +149,7 @@ meta keys (store):
   setup:<step>     iso time the step first showed working
   followed         JSON list of item ids the last pass read
   pass:last        JSON {at: iso, ok: bool, problems: [code], caught_up: bool}
-  pass:first_look  iso time of the first caught-up pass since a conversation was last ticked; absent = not yet
+  pass:looked      JSON list of the item ids the last caught-up pass followed; absent = no pass caught up yet
 
 /api/state additions:
   setup: {next_step: step|null}
@@ -156,7 +161,9 @@ Problem codes (message and next step per language in the locale files; step = th
   ai_signed_out → ai     ai_limit → none (wait)       ai_unreachable → ai
   wa_unlinked → whatsapp wa_sync_failed → none (retry) wa_pairing_failed → whatsapp
   wa_busy → whatsapp (a pass holds wacli's store; try again in a minute)
-  no_chats → chats       config_unreadable → none (contact whoever installed)
+  wa_chat_gone → chats (a ticked conversation moved to a new id; tick it again)
+  no_chats → chats       invalid_input → none (shown on the field)
+  config_unreadable → none (contact whoever installed)
   store_unreadable → none (contact whoever installed)  unknown → none (contact whoever installed)
 ```
 
@@ -164,7 +171,7 @@ Problem codes (message and next step per language in the locale files; step = th
 
 - **wacli** (pinned in `tools.py`): `auth --qr-format text --events`, `--read-only --json auth status`; its store file
   read-only.
-- **Claude Code CLI**: `auth login --claudeai`, `auth status --json`; the existing `claude -p` call for the test request.
+- **Claude Code CLI**: `auth login`, `auth status`; the existing `claude -p` call for the test request.
 - **Installer** (`install/assistantOS.iss`): the final link points to `/setup`.
 - **Hermes**: unchanged; through `aos mcp` it lists only the followed conversations.
 
@@ -172,9 +179,11 @@ Problem codes (message and next step per language in the locale files; step = th
 
 - Unit: setup progress and next step; config writes keep other keys and reject invalid input; the conversation list
   from a fixture wacli store (kinds, names, order); `followed` filtering in `build_state` (page and MCP agree);
-  newly ticked conversations read back to the floor; `pass:last` on success, failure and config errors; first-look
-  rules under the per-pass limit; newest draft and reason; every problem code has text in both languages; the wacli
-  command allowlist. Sign-in jobs run against fake CLIs that print the real event and prompt shapes.
+  newly ticked conversations read back to the floor; a ticked id missing from the store gives `wa_chat_gone`;
+  `pass:last` on success, failure and config errors; first-look rules under the per-pass limit and for a tick made
+  while a pass runs; newest draft and reason; every problem code has text in both languages; the wacli command
+  allowlist; every child process starts without a console window. Sign-in jobs run against fake CLIs that print the
+  real event and prompt shapes, and a test asserts neither the QR payload nor a pasted code reaches `errors.log`.
 - Windows VM, by hand, once per release candidate: a clean install from `assistantOS-Setup.exe` through every setup
   step with a real phone and a Claude subscription, then restart mid-setup and confirm it resumes at the right step.
 
@@ -183,7 +192,8 @@ Problem codes (message and next step per language in the locale files; step = th
 1. **Spike S1, Windows VM: how `claude auth login` finishes from a windowless background process.** Either the
    browser returns to the CLI by itself, or the CLI prints a link and waits for a pasted code. The design handles
    both; the spike says which screen the owner actually sees, and whether the CLI needs a console at all. It runs in
-   the VM, never on Ian's machine. **Not run yet (2026-10-21):** the VM was unavailable (no external disk attached, no
-   VM registered in UTM). It must run before the AI step is built; the rest of the build does not wait on it.
+   the VM, never on Ian's machine. It also confirms `claude auth login` and `claude auth status` behave as the CLI
+   reference says on the installed version. **Not run yet:** the VM was unavailable. It must run before the AI step is
+   built; the rest of the build does not wait on it.
 2. **Fizzy keeps unticked conversations.** The PRD limits the change to the page and Hermes (AC-CHATS-02), so the
    Fizzy surface still syncs every conversation the assistant has read. Left as is; Fizzy is out of scope.
