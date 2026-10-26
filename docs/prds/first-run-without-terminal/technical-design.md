@@ -63,7 +63,7 @@ Three pieces, all inside the existing Python package and the page server that al
 | WhatsApp pairing (AC-SETUP-03) | `wacli auth --qr-format text --events --idle-exit 30s --store <whatsapp.json store dir>`. Each `qr_code` event on its stderr replaces the QR; the server turns the payload into an SVG with `segno`. Done when `wacli --read-only --json auth status` reports `authenticated`; the phone number shown is its `phone` | Both flags exist in the pinned v0.19.0 and are wacli's documented way to feed an external renderer. With `--read-only`, status reads the session file without taking the store lock, so it answers while `auth` is still running. WhatsApp rotates the code; polling picks up the new one |
 | Nothing sent while connecting (AC-SETUP-04) | Setup runs only `wacli auth …` and `wacli --read-only --json auth status`; the conversation list is read from the store file read-only. A test asserts every wacli command setup can start against that allowlist | Pairing adds the linked device; nothing else in that list writes to WhatsApp. The read-only file access is the one the pass already uses |
 | Passkey or pairing errors | wacli's `error` event becomes a problem code (below) with one next step ("Tente de novo e escaneie em até 1 minuto", or contact whoever installed) | AC-SETUP-07: no raw output on screen |
-| AI sign-in (AC-SETUP-02) | `claude auth login`. Any `https://` link the CLI prints is shown as a button; if the CLI asks for a code, a field sends the pasted code to its input. Status from `claude auth status`: JSON by default, exit code 0 when signed in, `authMethod` `claude.ai` for a subscription. The step is done only when a test request through the installation's backend returns a valid answer | Covers both ways the CLI can finish (the browser returning to it, or a code to paste); spike S1 says which happens from a windowless process. Only documented forms: the CLI reference lists `--console` as the way out of the subscription sign-in (the default) and `--text` as the way out of JSON status, so no flag is needed for either. The test request is the PRD's definition of done |
+| AI sign-in (AC-SETUP-02) | `claude auth login --claudeai`. Any `https://` link the CLI prints is shown as a button; if the CLI asks for a code, a field sends the pasted code to its input. Status from `claude auth status --json`: exit code 0 when signed in, `authMethod` `claude.ai` for a subscription. The step is done only when a test request through the installation's backend returns a valid answer | Covers both ways the CLI can finish (the browser returning to it, or a code to paste); spike S1 says which happens from a windowless process. Both flags are listed by `claude auth login --help` and `claude auth status --help` (CLI 2.1.304) and only restate today's defaults; passing them keeps a future default change from moving the owner to API billing or to text output. The test request is the PRD's definition of done |
 | Installation switched to ChatGPT (SCOPE-002) | When `backend.json` is not `claude`, the AI step shows no sign-in, only the test request; a failure sends the owner to whoever installed | Switching and its sign-in are a support step |
 
 ### Who the owner is
@@ -171,7 +171,7 @@ Problem codes (message and next step per language in the locale files; step = th
 
 - **wacli** (pinned in `tools.py`): `auth --qr-format text --events`, `--read-only --json auth status`; its store file
   read-only.
-- **Claude Code CLI**: `auth login`, `auth status`; the existing `claude -p` call for the test request.
+- **Claude Code CLI**: `auth login --claudeai`, `auth status --json`; the existing `claude -p` call for the test request.
 - **Installer** (`install/assistantOS.iss`): the final link points to `/setup`.
 - **Hermes**: unchanged; through `aos mcp` it lists only the followed conversations.
 
@@ -192,8 +192,8 @@ Problem codes (message and next step per language in the locale files; step = th
 1. **Spike S1, Windows VM: how `claude auth login` finishes from a windowless background process.** Either the
    browser returns to the CLI by itself, or the CLI prints a link and waits for a pasted code. The design handles
    both; the spike says which screen the owner actually sees, and whether the CLI needs a console at all. It runs in
-   the VM, never on Ian's machine. It also confirms `claude auth login` and `claude auth status` behave as the CLI
-   reference says on the installed version. **Not run yet:** the VM was unavailable. It must run before the AI step is
+   the VM, never on Ian's machine. It also confirms `claude auth login --claudeai` and `claude auth status --json` behave as
+   their `--help` says on the installed version. **Not run yet:** the VM was unavailable. It must run before the AI step is
    built; the rest of the build does not wait on it.
 2. **Fizzy keeps unticked conversations.** The PRD limits the change to the page and Hermes (AC-CHATS-02), so the
    Fizzy surface still syncs every conversation the assistant has read. Left as is; Fizzy is out of scope.
