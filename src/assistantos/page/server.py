@@ -1,4 +1,8 @@
-"""The local page: stdlib HTTP on 127.0.0.1, one SQLite connection per request. Marks and requests — nothing is sent."""
+"""The local page: stdlib HTTP on 127.0.0.1, one SQLite connection per request. Marks and requests — nothing is sent.
+Only the page itself is answered (docs/changes/page-refuses-other-websites): every request must be addressed to
+127.0.0.1:<port> or localhost:<port> (Host — what DNS rebinding cannot change) and every POST must come from one of
+those two origins (Origin — what a website cannot forge). Never add Access-Control-Allow-Origin or an OPTIONS handler:
+either hands other websites back the reads and writes this takes away."""
 import json
 from datetime import date, datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -20,6 +24,26 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, *a):  # quiet: the page is polled
         pass
+
+    def end_headers(self):  # every response, send_error's 400/501 included: no framing, no sniffing JSON as script
+        self.send_header("Content-Security-Policy", "frame-ancestors 'none'")
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        super().end_headers()
+
+    def parse_request(self) -> bool:  # the guard: runs before routing, for every method
+        if not super().parse_request():
+            return False
+        port = self.server.server_address[1]
+        hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+        if (self.headers.get("Host") or "").lower() not in hosts or (
+                self.command == "POST" and self.headers.get("Origin") not in {f"http://{h}" for h in hosts}):
+            n = self.headers.get("Content-Length", "")
+            if n.isdigit() and int(n) <= 65536:  # read, never parsed: a close with unread data can reset the 403
+                self.rfile.read(int(n))
+            self._send(403, {"error": "forbidden"})  # not logged: any website could fill the owner's log
+            return False
+        return True
 
     def _send(self, code: int, body, ctype="application/json; charset=utf-8"):
         data = body.encode() if isinstance(body, str) else json.dumps(body, ensure_ascii=False).encode()

@@ -3,7 +3,9 @@ on:
   push:
     branches: ["**"]   # with only tags: listed, GitHub would skip every branch push
     tags: ["v*"]   # a release: builds the .exe that installs this tag and attaches it to the GitHub release
-    paths: ["install/**", ".github/workflows/installer.yml"]
+    # + the code the install checks below run for real: the page guard and the restart `aos update` does
+    paths: ["install/**", ".github/workflows/installer.yml", "src/assistantos/page/**",
+            "src/assistantos/platform/windows.py", "src/assistantos/update.py"]
   workflow_dispatch:
 jobs:
   build:
@@ -81,6 +83,29 @@ jobs:
           if (-not $ok) { throw 'page not answering on 127.0.0.1:8422' }
           if (-not (Test-Path ([Environment]::GetFolderPath('Desktop') + '\assistantOS.url'))) { throw 'desktop shortcut missing' }
           'installed: assistantOS, scheduled pass, page 200, desktop shortcut'
+      - name: Check the page refuses other websites and restarts on update
+        shell: pwsh
+        run: |
+          # docs/changes/page-refuses-other-websites: the guard on the installed page, then the restart `aos update` runs
+          $core = "$env:LOCALAPPDATA\assistantOS\core"; $u = 'http://127.0.0.1:8422'
+          function Check-Page {
+            $r = Invoke-WebRequest "$u/" -TimeoutSec 5
+            if ("$($r.Headers['X-Frame-Options'])" -ne 'DENY') { throw 'page without X-Frame-Options: DENY' }
+            $r = Invoke-WebRequest "$u/api/mark" -Method Post -Body '{}' -ContentType 'application/json' -SkipHttpErrorCheck -TimeoutSec 5
+            if ($r.StatusCode -ne 403) { throw "POST without Origin answered $($r.StatusCode), not 403" }
+            $r = Invoke-WebRequest "$u/api/mark" -Method Post -Body '{"item_id": "none", "status": "feito"}' -ContentType 'application/json' -Headers @{ Origin = $u } -SkipHttpErrorCheck -TimeoutSec 5
+            if ($r.StatusCode -ne 404) { throw "the page's own POST answered $($r.StatusCode), not 404 (unknown item)" }
+          }
+          Check-Page
+          $old = (Get-NetTCPConnection -LocalPort 8422 -State Listen).OwningProcess
+          & "$core\.venv\Scripts\python.exe" -c "import sys; from assistantos.platform import windows; p = windows.restart_page(); print(p or 'restarted'); sys.exit(1 if p else 0)"
+          if ($LASTEXITCODE) { throw 'restart_page failed' }
+          $new = $null
+          foreach ($i in 1..30) { $new = @(Get-NetTCPConnection -LocalPort 8422 -State Listen -ErrorAction SilentlyContinue).OwningProcess; if ($new -and $new -notcontains $old) { break }; Start-Sleep 1 }
+          if (Get-Process -Id $old -ErrorAction SilentlyContinue) { throw "the old page process $old survived the restart" }
+          if (@($new).Count -ne 1) { throw "expected one page process on 8422, found: $new" }
+          Check-Page
+          "page: guard on, restarted ($old -> $new)"
       - name: Check the assistant in Hermes
         shell: pwsh
         run: |

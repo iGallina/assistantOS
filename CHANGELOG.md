@@ -3,6 +3,16 @@
 Versões marcadas com tags `vX.Y.Z`. `aos update` instala a mais nova; mudanças no banco rodam sozinhas (migrações
 numeradas) e uma versão que falha no teste é desfeita.
 
+## Ainda não lançado
+
+- **A página só responde a ela mesma.** Outro site aberto no seu navegador não consegue mais marcar, adiar ou pedir
+  algo ao assistente pela página, nem ler as suas conversas, resumos e rascunhos, nem mostrar a página dentro dele
+  para roubar os seus cliques. Para você nada muda: o atalho, o link do instalador, o link nos cartões do Fizzy e
+  `http://127.0.0.1:8422` ou `http://localhost:8422` abrem a página como antes.
+- `aos update` agora reinicia a página no Windows, para ela rodar a versão nova na hora. **Desta vez**, depois de
+  atualizar, saia e entre no Windows uma vez (ou reinicie o computador): quem faz a atualização é a versão antiga, que
+  ainda não sabe reiniciar a página.
+
 ## v0.3.0 — 2026-10-11
 
 - **O seu assistente agora mora no Hermes** (Hermes Agent + Hermes Desktop), no lugar do Paseo. O instalador instala o

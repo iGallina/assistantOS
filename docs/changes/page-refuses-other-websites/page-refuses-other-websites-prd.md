@@ -42,18 +42,18 @@ is refused, including one served by another program on the owner's own computer.
 The page's buttons and its "Pedir ao assistente" box keep working. The same requests coming from any other website are
 refused and change nothing.
 
-- [ ] **AC-ORIGIN-01 — Other websites cannot act through the page.** A request to mark a conversation, defer it, set
+- [x] **AC-ORIGIN-01 — Other websites cannot act through the page.** A request to mark a conversation, defer it, set
   a wait, undo a mark, or queue a request to the assistant is carried out only when it comes from the page itself. The
   same request from any other website, including one that has pointed its own address at the owner's computer,
   changes nothing and queues nothing.
-- [ ] **AC-ORIGIN-04 — Other websites cannot show the page inside their own.** The page refuses to appear inside
+- [x] **AC-ORIGIN-04 — Other websites cannot show the page inside their own.** The page refuses to appear inside
   another website, so no site can place the page's buttons under the owner's clicks.
 
 ### Only the Page Itself Can Read What It Shows
 
 The conversations, summaries and drafts the page shows stay readable only by the page.
 
-- [ ] **AC-ORIGIN-02 — Other websites cannot read the page.** No other website can read the page or anything it shows,
+- [x] **AC-ORIGIN-02 — Other websites cannot read the page.** No other website can read the page or anything it shows,
   including a website that has pointed one of its own addresses at the owner's computer.
 
 ### Nothing Changes for the Owner

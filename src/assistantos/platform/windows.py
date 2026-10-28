@@ -1,11 +1,13 @@
 """Windows: the 5-minute pass as a Task Scheduler task that runs uv.exe directly — no PowerShell script runs on a
 schedule, so the machine's script policy is never involved. IgnoreNew = never two passes at once.
 The first pass is 1 minute after install: a start time of "now" is already past when the task registers, which
-pushes the first run a whole interval out (CI 2026-10-01: never ran in 90 s, result 0x41303 SCHED_S_TASK_HAS_NOT_RUN)."""
+pushes the first run a whole interval out (CI 2026-10-01: never ran in 90 s, result 0x41303 SCHED_S_TASK_HAS_NOT_RUN).
+The page is a second task, registered by install/bootstrap.ps1; `aos update` only restarts it."""
 import subprocess
 from pathlib import Path
 
 TASK = "assistantOS"
+PAGE_TASK = "assistantOS-pagina"
 
 
 def _q(s) -> str:
@@ -29,6 +31,15 @@ def status_script() -> str:
             "'{0} last={1} result={2}' -f (Get-ScheduledTask -TaskName " + _q(TASK) + ").State, $i.LastRunTime, $i.LastTaskResult")
 
 
+def restart_page_script() -> str:
+    t = _q(PAGE_TASK)  # the task is IgnoreNew: a start while the old process still runs would be dropped
+    return (f"if (Get-ScheduledTask -TaskName {t} -ErrorAction SilentlyContinue) {{ $ErrorActionPreference = 'Stop'; "
+            f"Stop-ScheduledTask -TaskName {t}; $n = 0; "
+            f"while ((Get-ScheduledTask -TaskName {t}).State -eq 'Running' -and $n++ -lt 50) {{ Start-Sleep -Milliseconds 200 }}; "
+            f"if ((Get-ScheduledTask -TaskName {t}).State -eq 'Running') {{ throw 'a tarefa da página não parou' }}; "
+            f"Start-ScheduledTask -TaskName {t} }}")
+
+
 def _ps(script: str) -> subprocess.CompletedProcess:
     return subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
                           capture_output=True, text=True, timeout=120)
@@ -47,3 +58,12 @@ def remove() -> str | None:
 def status() -> str | None:
     r = _ps(status_script())
     return r.stdout.strip() if r.returncode == 0 else None
+
+
+def restart_page() -> str | None:
+    try:
+        r = _ps(restart_page_script())
+    except (OSError, subprocess.SubprocessError) as e:  # the update already succeeded: report, never crash
+        return str(e)
+    out = [line.strip() for line in (r.stderr or r.stdout).splitlines() if line.strip()]
+    return None if r.returncode == 0 else (out[0] if out else f"exit {r.returncode}")  # PowerShell: message first

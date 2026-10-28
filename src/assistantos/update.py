@@ -1,10 +1,12 @@
 """aos update: the newest release tag from `upstream` merged into the owner's own repo. Owner files live in
 git-ignored local/, so a merge never touches them. The store is copied first; the new code is tested in a fresh
 process (this one still runs the old code); any failure puts code and store back. `uv run` re-syncs the
-environment to whichever lockfile is checked out, so a rollback needs no reinstall."""
+environment to whichever lockfile is checked out, so a rollback needs no reinstall. A running page keeps the old code
+until restarted, so a successful update restarts it (Windows; on macOS the page is started by hand)."""
 import shutil
 import sqlite3
 import subprocess
+import sys
 from collections.abc import Callable
 from contextlib import closing, redirect_stdout
 from io import StringIO
@@ -44,7 +46,15 @@ def _copy_db(src: Path, dst: Path) -> None:
         a.backup(b)
 
 
-def update(home: Path, self_test: Callable[[Path, bool], str | None] = _self_test) -> tuple[int, str]:
+def _restart_page() -> str | None:
+    if sys.platform != "win32":
+        return None
+    from .platform import windows
+    return windows.restart_page()
+
+
+def update(home: Path, self_test: Callable[[Path, bool], str | None] = _self_test,
+           restart_page: Callable[[], str | None] = _restart_page) -> tuple[int, str]:
     if _git(home, "rev-parse", "--git-dir").returncode:
         return 1, f"{home} não é um repositório git: instale a partir do seu repositório do assistantOS"
     if _git(home, "remote", "get-url", REMOTE).returncode:
@@ -75,10 +85,13 @@ def update(home: Path, self_test: Callable[[Path, bool], str | None] = _self_tes
         if backup.exists():
             _copy_db(backup, db)
         return 1, f"a versão {tag} falhou no teste ({problem}); voltei para a anterior, nada foi perdido"
+    notes = [f"atualizado para {tag}"]
+    if problem := restart_page():
+        notes.append(f"a página não reiniciou ({problem}): saia e entre no Windows de novo")
     hermes = shutil.which("hermes")
     if hermes:  # new skills reach the owner's Hermes only through a profile update (it re-reads core/hermes/)
         r = subprocess.run([hermes, "profile", "update", "assistantos", "-y"], cwd=home, capture_output=True, text=True,
                            timeout=600)
         if r.returncode:
-            return 0, f"atualizado para {tag}; o perfil do Hermes não atualizou ({_last(r)}): rode o instalador de novo"
-    return 0, f"atualizado para {tag}"
+            notes.append(f"o perfil do Hermes não atualizou ({_last(r)}): rode o instalador de novo")
+    return 0, "; ".join(notes)

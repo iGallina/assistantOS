@@ -111,7 +111,8 @@ conversas que mais pesam no seu dia; dá para aumentar depois.
 ## Abrir a página
 
 Dê dois cliques no atalho **assistantOS** da área de trabalho (ou abra **http://127.0.0.1:8422** no navegador). A
-página liga sozinha quando você entra no Windows. Ela fica só no seu computador: ninguém mais acessa.
+página liga sozinha quando você entra no Windows. Ela fica só no seu computador: ninguém mais acessa, e outro
+site aberto no seu navegador não consegue ler nem mexer nela.
 
 ### As seções
 
@@ -207,7 +208,7 @@ Ele mostra:
 
 | Comando | O que faz |
 |---|---|
-| `uv run aos update` | Instala a versão mais nova. Se algo der errado, volta sozinho para a versão anterior, sem perder nada. |
+| `uv run aos update` | Instala a versão mais nova e, no Windows, reinicia a página. Se algo der errado, volta sozinho para a versão anterior, sem perder nada. |
 | `uv run aos export` | Cria um arquivo `.zip` com tudo que é seu: configurações, histórico e relatórios. |
 | `uv run aos uninstall` | Faz a cópia acima e para o assistente. Seus arquivos ficam no computador até você apagar a pasta. |
 
