@@ -148,3 +148,12 @@ Question (Ian): do we need LangChain and LangGraph, given agents must carry the 
 - **SCOPE-002**: setup connects Claude only; switching to ChatGPT stays a support step, sign-in included.
 - **AUTH-001** (2026-10-20): two AI sign-ins for now (Hermes, and setup for the summaries). One sign-in through
   Hermes's one-shot mode waits for a VM spike proving the run loads zero tools.
+
+## 2026-10-28 — Technical designs approved
+
+- **First-run design approved (Ian, 2026-10-28: "first-run technical design: ok")**, as revised by the fresh-context
+  review (`3f2c9e3`, `f0b8497`). Design refinement, phase split and the phased build may start. Spike S1 (Open
+  Question 1) still gates only the AI sign-in step.
+- **page-refuses-other-websites built without a separate design review** (AM under Ian's rule for non-gate items,
+  2026-10-27: "T10 go"): a small change on the established pattern, every decision a two-way door. Built on branch
+  `page-refuses-other-websites`; the manual Edge check (AC-ORIGIN-03) waits for the Windows VM.
