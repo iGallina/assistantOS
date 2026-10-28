@@ -44,6 +44,42 @@ by whoever installs.
 
 ---
 
+## Authentication Assumptions
+
+### AUTH-002. Always run the summaries on the Claude subscription connected in setup, ignoring any API key or cloud account set on the computer? — ⏳ PENDING (Added 2026-10-28 — new question; 85% confidence)
+
+**Assumption**: The assistant **ignores any Anthropic API key or cloud-account setting** (Amazon Bedrock, Google
+Vertex, Microsoft Foundry) on the owner's computer. The summaries, the drafts and setup's test request always run on,
+and bill to, **the Claude subscription the owner signed in to** in setup.
+
+**Example**: The owner's computer has an Anthropic API key set for another tool. Every look still runs on the owner's
+Claude subscription, and the API account is never billed.
+
+**What changes for an existing install**: an install whose summaries run on an API key today shows **"AI signed
+out"** after updating, until someone signs in to the subscription. The release notes say so.
+
+**Evidence**: When Claude Code runs in the background, it **always uses an API key set on the computer**, ahead of the
+subscription sign-in (Claude Code's sign-in documentation). Today the assistant passes the computer's settings on to
+Claude, so a key set for anything else would bill a pay-per-use API account **on every 5-minute look**.
+
+A check during setup cannot prevent this. The looks run later with their own settings, and a key can be added after
+setup.
+
+The closest rule is `docs/decisions.md` (2026-09-29): customers run everything on their subscription, "no API keys
+required". It says "required", not "never used", so it does not settle a key set on the computer.
+
+The alternative that lost: use an API key when one is set. It bills a separate API account the owner may not know
+about, and it contradicts setup's promise to connect their Claude subscription (AC-SETUP-02).
+
+**Confirm or Correct**:
+- [ ] Correct — always the subscription; ignore any API key or cloud account on the computer
+- [ ] Wrong — use an API key when one is set on the computer
+- [ ] Wrong — different approach: _______________
+
+**Confidence**: 85% | **Impact if Wrong**: 🟡 MEDIUM
+
+---
+
 ## Interface Assumptions
 
 ### UI-001. Make the assistantOS page, not Hermes, the place where a new owner makes their daily decisions?
