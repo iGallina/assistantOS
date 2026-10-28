@@ -15,7 +15,7 @@
      Gaps in numbering (e.g., DATA-001, DATA-003) are expected
      when assumptions are validated and moved. NEVER close gaps. -->
 
-**Last Updated**: 2026-10-21
+**Last Updated**: 2026-10-28
 **Status**: DRAFT - Pending business validation
 
 **Document Purpose**: This document lists the business assumptions we're making to proceed with the
@@ -115,6 +115,38 @@ through the same list, show every conversation the assistant has ever read, what
 - [ ] Wrong — different approach: _______________
 
 **Confidence**: 75% | **Impact if Wrong**: 🟢 LOW
+
+### UI-005. Show the last check as failed whenever the owner must fix or wait for something, including the AI usage limit and a chosen conversation that moved, but not when one conversation's summary failed once? — ⏳ PENDING (Added 2026-10-28 — new question; 80% confidence)
+
+**Assumption**: Each look, every 5 minutes, shows on the page as **failed whenever the owner has something to fix or
+to wait for**: the AI is signed out, unreachable or **at its usage limit**; WhatsApp is unlinked or did not sync; **a
+chosen conversation moved** and must be ticked again; no conversation is chosen; the settings cannot be read; or
+something unexpected stopped the look.
+
+When **one conversation's summary fails once**, the look still shows as **worked**. The next look tries that
+conversation again by itself.
+
+**Example**: At 14:35 the AI subscription reaches its usage limit. The page shows the 14:35 check as failed and says
+there is nothing to do but wait. At 14:40 the AI's answer for one group cannot be used. The 14:40 check shows as worked,
+and the 14:45 look summarizes that group again.
+
+**Evidence**: The question came from deciding what "whether it worked" means on the page (AC-STATUS-02). AC-SETUP-07
+names only **three places** where the owner sees a problem: a setup step, the final check, and a failed look on the
+page. After setup, a problem not shown as a failed look is **shown nowhere**.
+
+At the usage limit no new summaries arrive; a look shown as worked would leave the owner waiting with no reason given.
+A conversation that WhatsApp moved reads nothing, with no error, until it is ticked again. A single summary failure
+**retries itself on the next look** and needs nothing from the owner.
+
+The alternative that lost: count the usage limit as worked and say nothing, since it clears by itself. It lost because
+the page would then say "worked" while no summaries come in.
+
+**Confirm or Correct**:
+- [ ] Correct as stated
+- [ ] Wrong — treat the AI usage limit as "worked" and say nothing
+- [ ] Wrong — different approach: _______________
+
+**Confidence**: 80% | **Impact if Wrong**: 🟡 MEDIUM
 
 ---
 

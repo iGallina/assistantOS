@@ -42,6 +42,11 @@ asks them to type a command or open a file.
 
 - [ ] **AC-SETUP-01 — Setup opens by itself.** When the installer finishes, setup opens on the owner's screen with no
   further action. The owner can reopen it at any time from the assistantOS page.
+  - Replaces in part: Constraints, "logins are listed for the owner as next steps", and Task 4, "the logins that
+    follow", in `docs/superpowers/plans/2026-10-01-assistantos-step5-install.md` (on Windows; a Mac keeps today's
+    steps, SCOPE-001)
+  - Replaces in part: AC-ORIGIN-03 in `docs/changes/page-refuses-other-websites/page-refuses-other-websites-prd.md`
+    (the link at the end of the installer now opens setup, not the page)
 - [ ] **AC-SETUP-02 — The AI subscription connects without a command.** Following on-screen steps, the owner signs in
   through the browser to Claude, the AI that writes the summaries (SCOPE-002). The step shows as done only when the
   installation's AI answers a test request.
@@ -52,6 +57,8 @@ asks them to type a command or open a file.
   step sends a message, changes a chat, or changes anything in the owner's WhatsApp account.
 - [ ] **AC-SETUP-05 — The owner says who they are once.** The owner types their name. The time zone and language come
   from the computer's settings and are shown so the owner can change them.
+  - Replaces in part: Global Constraints, "pt-BR is the default", in
+    `docs/superpowers/plans/2026-09-29-assistantos-step1-core.md` (the language setup proposes comes from the computer)
 - [ ] **AC-SETUP-06 — Each step shows what works now, and progress survives leaving.** Each step shows whether what
   it set up works now, and the owner can do any step again. Closing setup or restarting the computer never undoes a
   finished step (one that has ever shown as working); setup reopens at the first step never finished.
@@ -96,8 +103,8 @@ while setup is unfinished.
   | The assistant's own settings and its record of conversations can be read | No setup step: the message asks the owner to contact whoever installed |
 
 - [ ] **AC-STATUS-02 — The page says when the assistant last looked.** The page says in words when the last pass ran
-  and whether it worked ("Última verificação às 14:35", "Última verificação ontem às 22:10"). When a pass failed, the
-  page explains it as AC-SETUP-07 says.
+  and whether it worked ("Última verificação às 14:35", "Última verificação ontem às 22:10"). When a pass failed (which
+  passes count as failed: UI-005), the page explains it as AC-SETUP-07 says.
 - [ ] **AC-STATUS-03 — Unfinished setup is never shown as working.** While a setup step has never been finished
   (AC-SETUP-06), the page's first screen says setup is not finished and links to the first step never finished, in place
   of the empty-list message (AC-PAGE-03) and the last-check line (AC-STATUS-02). A connection lost after setup is a
@@ -110,6 +117,9 @@ need a decision and keeps everything else one click away.
 
 - [ ] **AC-PAGE-01 — The first screen is the decision list.** Opening the page shows the "Decidir agora" list and
   its conversations (what each shows: AC-PAGE-04). No other section's conversations are on the first screen.
+  - Replaces in part: Global Constraints, "Sections, in order", in
+    `docs/superpowers/plans/2026-10-01-assistantos-step3b-page.md` (all sections on the first screen; the sections and
+    what goes in each stay)
 - [ ] **AC-PAGE-02 — Everything else is one click away.** One click on the first screen reaches each of "Em aberto",
   "Aguardando", "Depois" and "Resolvidos", and the first screen shows how many conversations each one holds.
 - [ ] **AC-PAGE-03 — An empty list says so.** When nothing needs a decision, the first screen says when the assistant
@@ -125,6 +135,9 @@ need a decision and keeps everything else one click away.
   | Its summary covers its last message | What changed and the decision |
   | Its summary is older than its last message | What changed and the decision, marked out of date ("brief anterior à última mensagem"), and that last message |
   | It has no summary yet | Its last message |
+
+  - Replaces in part: Task 3, "`page/page.html`", in `docs/superpowers/plans/2026-10-01-assistantos-step3b-page.md`
+    (what an item shows before a click, and which actions show first)
 
 - [ ] **AC-PAGE-05 — The draft shown is the newest one.** A conversation's newest draft is the latest one written for
   it, in its summary or on request. It is the one "Copiar rascunho" copies, and it is marked out of date when written
