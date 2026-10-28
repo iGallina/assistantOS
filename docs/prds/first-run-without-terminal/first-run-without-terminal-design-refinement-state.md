@@ -1,10 +1,10 @@
 # Design Refinement State — first-run-without-terminal
 
-Started: 2026-10-28   Current pass: 4   Status: In progress
+Started: 2026-10-28   Current pass: 5   Status: In progress
 Branch: prd-first-run
 Existing code posture: Preserve (source: TD §Existing Code)
 PRD words: at start 1699 · growth baseline 1699
-Last updated: 2026-10-28 12:06
+Last updated: 2026-10-28 12:21
 
 ## Documents
 | Document | Path |
@@ -21,6 +21,7 @@ Last updated: 2026-10-28 12:06
 | 1 | 12 | 12 | 8 | 1 | 2 | 0 | 1 |
 | 2 | 5 | 12 | 10 | 1 | 1 | 0 | 0 |
 | 3 | 3 | 10 | 7 | 0 | 3 | 0 | 0 |
+| 4 | 1 | 6 | 5 | 0 | 1 | 0 | 0 |
 
 ## Questions
 | ID | Pass | Question (one line) | Type | Impact | Conf. start → now | Status | Landed in |
@@ -56,17 +57,21 @@ Last updated: 2026-10-28 12:06
 
 | Q24 | 3 | Interfaces: `GET /api/setup/chats` answers `wa_unlinked` while unlinked, but the list row/test serve the list then; how does the GET know the link state without running wacli on a poll? (AC-CHATS-03: ticks visible after an unlink) | Technical | MEDIUM | 60 → 90 | Resolved | TD Interfaces (intro, chats route), §Conversations "The list", §Setup "Moving between steps", Testing |
 | Q25 | 3 | Missing Claude CLI → `ai_unreachable` sends the owner to the AI step, which can't fix it (missing wacli → `unknown`, whoever installed) | Technical | LOW | 70 → 90 | Resolved | TD §Status \"AI problems in a pass\", Testing |
-| Q26 | 3 | Chats step `works` = "at least one ticked": shows working while every tick is gone and every pass fails `wa_chat_gone` | Technical | LOW | 70 → 85 | Deferred | — |
+| Q26 | 3 | Chats step `works` = "at least one ticked": shows working while every tick is gone and every pass fails `wa_chat_gone` | Technical | LOW | 70 → 92 | Resolved | TD §Setup \"What works now\", \"Progress\", §Conversations (gone-tick rule), §Status \"Final check\", Interfaces, Testing |
 | Q27 | 3 | `POST /api/setup/owner` marks the owner step even when the name is still the example placeholder, against the owner works rule | Technical | LOW | 80 → 95 | Resolved | TD §Setup \"What works now\", Language and time zone rationale, Interfaces, Testing |
 
 | Q28 | 3 | `ai_unreachable` "last model call before the pass in `runs`" picks up Jev rows (`backend`=`jev`, jev.py:42); count only the configured backend's rows? (+ a Claude result exit 0 with no `is_error` and no `structured_output`, claude_cli.py:19-20, is unclassified; + `make_backend` raising → which `pass:last` code, cli.py:98-102) | Technical | MEDIUM | 85 → 92 | Resolved | TD §Status \"Failed pass\", \"AI problems in a pass\", \"Pass record\", Testing |
-| Q29 | 3 | No failure-to-code mapping for the setup test request (`ai/test`, check `ai` item): never-signed-in → no `api_error_status` → `NoAnswer` → literal `ai_unreachable`, not the sign-in TD/AUTH-002 promise; classify via `signed_in()` | Technical | MEDIUM | 75 → 88 | Deferred | — |
+| Q29 | 3 | No failure-to-code mapping for the setup test request (`ai/test`, check `ai` item): never-signed-in → no `api_error_status` → `NoAnswer` → literal `ai_unreachable`, not the sign-in TD/AUTH-002 promise; classify via `signed_in()` | Technical | MEDIUM | 75 → 94 | Resolved | TD §Status row \"AI test request\", SCOPE-002 row, Integration Points, Data Models `SetupTest`, Testing |
 | Q30 | 3 | A pass whose 2+ calls all get no answer, after a good call before it, shows as worked and caught up (first look completes during an outage), against UI-005 "one conversation's summary fails once" | Technical | MEDIUM | 65 → 90 | Resolved | TD §Status \"Failed pass\" (single `ai_unreachable` rule, UI-005), Integration Points, Testing |
 
-| Q31 | 3 | Re-link after a removal from the phone: in a narrow race the dead device row survives, the first `wacli auth` ends with no QR; pairing job retries `wacli auth` once by itself, then `wa_pairing_failed`; setup never runs `logout` | Technical | LOW | 85 → 85 | Deferred | — |
+| Q31 | 3 | Re-link after a removal from the phone: in a narrow race the dead device row survives, the first `wacli auth` ends with no QR; pairing job retries `wacli auth` once by itself, then `wa_pairing_failed`; setup never runs `logout` | Technical | LOW | 85 → 93 | Resolved | TD §The two sign-ins (re-pair restart row), Testing |
 
-| Q32 | 4 | `SetupState.whatsapp.syncing` has no named reader (chats GET has its own, wider `syncing`): drop it or name the screen that shows it | Technical | LOW | 75 → 75 | Pending | — |
-| Q33 | 4 | List before the first pairing with ticks already in `whatsapp.json`: Interfaces says empty list; "The list" says every ticked id is listed (would show `wa_chat_gone`) — fold with Q26 ("gone only when the store was read") | Technical | LOW | 75 → 75 | Pending | — |
+| Q32 | 4 | `SetupState.whatsapp.syncing` has no named reader (chats GET has its own, wider `syncing`): drop it or name the screen that shows it | Technical | LOW | 75 → 92 | Resolved | TD Data Models `SetupState.whatsapp`, \"Still bringing names in\", Testing |
+| Q33 | 4 | List before the first pairing with ticks already in `whatsapp.json`: Interfaces says empty list; "The list" says every ticked id is listed (would show `wa_chat_gone`) — fold with Q26 ("gone only when the store was read") | Technical | LOW | 75 → 92 | Resolved | TD §Conversations \"The list\", \"Ticked conversations the list would not show\", Interfaces, Testing |
+
+| Q34 | 4 | `NoAnswer` doesn't stop remaining calls (600 s each, base.py:30); Windows kills the pass at 30 min (windows.py:19) and a killed pass writes no `pass:last` → in a hanging outage a pass with 3+ due calls dies silently; stop remaining calls after the second `NoAnswer`? | Technical | MEDIUM | 75 → 88 | Deferred | — |
+
+| Q35 | 5 | Gone-tick "Limit" claims the next pass clears a pre-pairing tick shown gone right after the first pairing (unverified: a DM with no synced history may never arrive) and conflicts with the empty-`chats` rationale; hold `wa_chat_gone` while `syncing`, or keep as a limit with a corrected claim? | Technical | LOW | 70 → 70 | Pending | — |
 
 Status values: Pending · Investigating · Answered, not folded · Resolved · Assumption · Deferred (carried to next pass) · Blocked · Dropped (failed the scope gate on closer look; reason in notes). A Reframed question is replaced by a new row marked Pending with "reframed from Qn" in its notes.
 
@@ -123,6 +128,15 @@ Deferred at 88. Setup test request is one call, classified alone (no two-in-a-ro
 ### Q30
 Investigator rated 85 because it rests on pending UI-005; recorded as 90: the rule implements UI-005 as written (an implementable assumption counts as dispositioned); if UI-005 changes, this rule changes with it.
 
+### Q32
+Resolved 92, waiting for writer slot. Drop `SetupState.whatsapp.syncing` (no reader; AC-CHATS-01's "the screen" is the conversations screen, which reads `GET /api/setup/chats` `syncing`). Data Models line → `whatsapp: {job: Job|null, phone: string|null}`; "Still bringing names in" names the conversations step and says it polls `GET /api/setup/chats` every 2 s; drop "In `GET /api/setup/chats` only" and the "uses (1) and (2)" sentence; Testing `syncing` clause targets the chats GET only. Text: ~/.claude/deliveries/a2ebee1a-beda-4c0f-be5d-819f57da31c1/inv-q32.md.
+
+### Q31 (pass 4)
+Resolved 93, waiting for writer slot. Rule: a pairing job whose `wacli auth` ends without ever emitting `qr_code`, while read-only status still says not linked and the store was not locked, restarts `wacli auth` once (counted in job memory); a second no-QR run → `wa_pairing_failed`; a lock (error event "store is locked…") → `wa_busy`, no restart; no restart after a shown QR or a server-ended job; setup never runs `auth logout`. (Dead device row: `auth` opens no QR channel, WhatsApp refuses, whatsmeow deletes the row, `auth` exits 0 "Authenticated. Messages stored: 0".) Row after "WhatsApp already linked" + tests: ~/.claude/deliveries/a2ebee1a-beda-4c0f-be5d-819f57da31c1/inv-q31b.md. Don't copy wacli's "auth logout, then auth --phone" hint into locale text.
+
+### Q34
+Deferred at 88. Stop rule: two `NoAnswer` IN A ROW (not in total) stops every remaining model call (briefs and requests, same path as `QuotaExceeded`); any answer (incl. off-schema) resets; count carries from `brief` to `requests` node; consistent with the `ai_unreachable` rule (first two no-answer → pass ends with 2 calls, fails; answer then two no-answers → stops, "worked" under mixed rule, not caught up). Stop alone insufficient: each hung call costs 600 s (base.py:30; Claude Code itself waits 600 s per API attempt, retries up to 10: `API_TIMEOUT_MS`, `CLAUDE_CODE_MAX_RETRIES`); Windows ends the task at 30 min (windows.py:19-20). Proposed new row "Pass time limit": a model call starts only in the first 15 min of a pass; work left by the limit is not tried, records no code, not a failed try; `signed_in()` gets a 30 s limit (timeout = `None`). macOS launchd doesn't end a pass (late record, not lost; untested). Full outage ≈ 23 min max (2 calls + 180 s sync). Text: amendments to "AI problems in a pass", new "Pass time limit" row, "First look done" sentence, "Failed pass" rationale line, 9 tests: ~/.claude/deliveries/a2ebee1a-beda-4c0f-be5d-819f57da31c1/inv-q34.md. Residual (why 88): Claude CLI retry duration unmeasured; 15-min budget is a judgment.
+
 ### Q2
 Proposed answer (fold into TD §Conversations): new row "A conversation that moved to its phone id": trigger = a message whose id is already stored under a `wa:…@lid` item arrives under a phone id; the pass moves the whole item (messages, requests, mark, brief, label, draft, Fizzy card) to the new id in one transaction, keeps rows the new id already has, deletes nothing; moves only from a hidden id (never merges two phone ids). Correct "Duplicates are already ignored by message id" in the "newly ticked" row; limit: a conversation with no messages in the last 7 days starts fresh under the new id. Tests: the move, and the two-phone-ids case. Evidence + sketch: ~/.claude/deliveries/a2ebee1a-beda-4c0f-be5d-819f57da31c1/inv-q2.md (wacli v0.19.0 `internal/store/lid_migration.go` keeps msg_id; migration runs each sync, `internal/app/sync.go:197`; store.py:21-22, 83-88).
 
@@ -130,12 +144,15 @@ Proposed answer (fold into TD §Conversations): new row "A conversation that mov
 Assumption UI-005 (80%) + TD rows. Open overlap: "every model call failed → `ai_unreachable`" depends on Q4's classification. Evidence: ~/.claude/deliveries/a2ebee1a-beda-4c0f-be5d-819f57da31c1/inv-q3.md.
 
 ## Conformance
+For next conformance (discovery-p4 nits): TD:84 still has pre-Q33 text; TD:103 repeats TD:105; TD:297 stray line break.
 For next conformance: `SetupState.whatsapp.syncing` and `GET /api/setup/chats` `syncing` carry the same flag twice; `wa_sync_failed` "stops a whole source" wording.
 Pass 1: fixed AC-STATUS-02 UI-005 citation; `caught_up` definition aligned with Failed pass row (+ test); heading spacing; Testing reflow. Raised Q16, Q17. Minor: `invalid_input` outside display order in catalog (harmless, never in `pass:last`). TD/PRD word ratio 2.86.
 
 Pass 2: fixed "Installs from before" (final check also writes `setup:ai`); Integration Points Claude line (JSON read on every pass call; AUTH-002 env strip). Raised Q24–Q27. Repeats left for consolidation (gone-id rules in three rows; `ai_unreachable` definition in two). TD 7954 words = 4.36× PRD (1823): consolidation must cut.
 
 Pass 3: Failed pass row's "stops a whole source…" clause removed (false for `wa_sync_failed`/`wa_unlinked`/`ai_unreachable`; each code's own row states it); Problems rationale aligned with `ai_unreachable` wording; Testing name-rule order (person contact names first). `syncing` not a pure duplicate (chats GET uses 3 cases, SetupState 2). Raised Q32, Q33. TD 9536 words = 5.23× PRD (1823): consolidation must cut.
+
+Pass 4: "WhatsApp already linked" `wacli logout` → `wacli auth logout`; Interfaces/Testing reflow. Repeats for consolidation: Problems rationale vs "AI problems in a pass"; "AI test request" rationale vs "AI problems"/SCOPE-002; gone-tick "one rule for step, check and pass" ×3; "empty `chats` before pairing" ×3 + Interfaces; "test counts in two-in-a-row" in "Failed pass" and "AI test request". Raised Q35. TD 11,014 words = 6.0× PRD (1,823).
 
 ## Exploration scripts
 | Script | Question | Finding |
@@ -147,6 +164,10 @@ Changed after pass 1: AC-STATUS-02 (citation of UI-005 only, conformance pass 1)
 Completion: pending
 
 ## Noticed, out of scope
+- An outage can turn an owner's request into `needs_session`: `NoAnswer` counts toward `MAX_TRIES` (graph.py:171)
+- Windows: if `claude` is a `.cmd` shim, `subprocess.run`'s timeout may not kill the real process; a process left holding the pipes can block the pass
+- Fizzy surface sync has no total time limit and runs before the pass record is written
+- `MAX_TRIES = 2` closes an open owner request for good after two no-answer passes during an outage (graph.py:60, 168-171)
 - TD wording: `wa_sync_failed` listed among codes that "stop a whole source", but the pass still reads the store after it (conformance)
 - Every pass syncs with `--presence-mode normal`; wacli docs say this can mute the phone's notifications and recommend `quiet` for personal numbers (existing behavior; worth one decision)
 - A stopped scheduler would show "em instantes" forever (the last-check line still shows how old the last pass is; no criterion asks to detect it)
@@ -175,4 +196,4 @@ Completion: pending
 | No `claude auth`, wacli, product install or run on this Mac (PM brief) | questions needing live CLI behavior | answer from docs, `--help` text already recorded, code and tests only |
 
 ## Next action
-Pass 4: discovery (backlog Q26+Q33, Q29, Q31, Q32 first), then resolve. Pass-4 deferrals of Q26/Q29/Q31 at unchanged confidence → record as design decisions (two-pass ceiling).
+Pass 5: discovery + Q34 (2nd pass; below 90 again → design decision) + Q35.
