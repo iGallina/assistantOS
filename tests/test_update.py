@@ -46,6 +46,16 @@ def _no_real_powershell(monkeypatch):
     monkeypatch.setattr(windows, "_ps", lambda s: subprocess.CompletedProcess([], 0, "", ""))
 
 
+@pytest.fixture(autouse=True)
+def _no_real_hermes(monkeypatch, tmp_path):
+    """A dev machine's own Hermes is never touched: only a fake `hermes` a test puts under tmp_path is found."""
+    import shutil
+    real = shutil.which
+    monkeypatch.setattr("assistantos.update.shutil.which",
+                        lambda name: None if name == "hermes" and not str(real(name) or "").startswith(str(tmp_path))
+                        else real(name))
+
+
 def ok(home, doctor_was_ok):
     return None
 
